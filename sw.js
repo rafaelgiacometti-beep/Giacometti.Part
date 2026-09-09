@@ -1,4 +1,4 @@
-const CACHE_NAME = 'giacometti-farm-v3';
+const CACHE_NAME = 'multiempresa-v1';
 const ASSETS = [
   './',
   './index.html',

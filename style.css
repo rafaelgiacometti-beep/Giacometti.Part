@@ -1,9 +1,10 @@
-/* --- TEMA ESTILO CUCOCLOUD DASHBOARD - GIACOMETTI FARM --- */
+/* --- TEMA ESTILO DASHBOARD MULTIEMPRESA --- */
 :root {
   --bg-main: #f0f2f5;
   --bg-card: #ffffff;
   --primary-blue: #3b82f6;
   --gradient-blue: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  --gradient-rg3d: linear-gradient(135deg, #10b981 0%, #047857 100%);
   --accent-green: #10b981;
   --text-dark: #1f2937;
   --text-gray: #6b7280;
@@ -37,7 +38,7 @@ body {
   background-color: var(--bg-main);
 }
 
-/* --- BARRA SUPERIOR (HEADER) --- */
+/* --- BARRA SUPERIOR --- */
 .topbar {
   background: #ffffff;
   padding: 16px 20px;
@@ -67,6 +68,64 @@ body {
   cursor: pointer;
 }
 
+/* --- HUB DE SELEÇÃO DE EMPRESA --- */
+.company-select-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.company-card {
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 22px 18px;
+  border: 2px solid transparent;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.company-card:active {
+  transform: scale(0.98);
+}
+
+.company-card.peptides {
+  border-color: #3b82f6;
+}
+
+.company-card.rg3d {
+  border-color: #10b981;
+}
+
+.company-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+
+.company-card.peptides .company-icon { background: #dbeafe; }
+.company-card.rg3d .company-icon { background: #d1fae5; }
+
+.company-info h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.company-info p {
+  font-size: 0.85rem;
+  color: var(--text-gray);
+}
+
 /* --- CONTEÚDO PRINCIPAL --- */
 #content {
   flex: 1;
@@ -81,14 +140,12 @@ h2 {
   font-weight: 700;
 }
 
-/* --- CARD DE BOAS-VINDAS / DESTAQUE (GRADIENTE AZUL) --- */
 .card-banner {
-  background: var(--gradient-blue);
   color: #ffffff;
   border-radius: 20px;
   padding: 20px;
   margin-bottom: 16px;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -117,7 +174,6 @@ h2 {
   font-size: 1.5rem;
 }
 
-/* --- CARDS BRANCOS ARREDONDADOS --- */
 .card {
   background: var(--bg-card);
   border-radius: 20px;
@@ -143,11 +199,6 @@ h2 {
   color: var(--text-gray);
 }
 
-.card p strong {
-  color: var(--text-dark);
-}
-
-/* --- GRADE DE ATALHOS COM ÍCONES CIRCULARES --- */
 .grid-atalhos {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -190,7 +241,6 @@ h2 {
   color: var(--text-dark);
 }
 
-/* --- BOTÃO PRINCIPAL DE AÇÃO --- */
 .btn-novo-pedido {
   width: 100%;
   background-color: var(--accent-green);
@@ -209,7 +259,6 @@ h2 {
   margin-bottom: 16px;
 }
 
-/* --- FORMULÁRIOS --- */
 label {
   font-size: 0.8rem;
   color: var(--text-gray);
@@ -244,27 +293,16 @@ input:focus, select:focus {
   margin-top: 6px;
 }
 
-/* --- LISTAS --- */
-ul {
-  list-style: none;
-}
-
+ul { list-style: none; }
 ul li {
   padding: 10px 0;
   border-bottom: 1px solid var(--border-light);
   font-size: 0.85rem;
   color: var(--text-gray);
 }
+ul li:last-child { border-bottom: none; }
+ul li strong { color: var(--text-dark); }
 
-ul li:last-child {
-  border-bottom: none;
-}
-
-ul li strong {
-  color: var(--text-dark);
-}
-
-/* --- NAVEGAÇÃO INFERIOR CLEAN --- */
 .bottom-nav {
   position: fixed;
   bottom: 0;

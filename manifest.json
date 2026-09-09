@@ -1,6 +1,6 @@
 {
-  "name": "Giacometti Farm",
-  "short_name": "Giacometti Farm",
+  "name": "Gestão Multiempresa",
+  "short_name": "Gestão App",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f0f2f5",

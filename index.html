@@ -5,20 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#3b82f6">
   
-  <!-- Meta tags PWA -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Giacometti Farm</title>
+  <title>Gestão Multiempresa</title>
   
-  <!-- Ícones e Manifest -->
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
   
-  <!-- Estilos CSS -->
   <link rel="stylesheet" href="style.css">
-  
-  <!-- Biblioteca de Gráficos Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -27,8 +22,8 @@
   <!-- Barra Superior -->
   <header class="topbar">
     <div>
-      <div class="brand">🚜 GIACOMETTI FARM</div>
-      <div class="subtitle">Gestão & Controlo Financeiro</div>
+      <div class="brand">⚡ PAINEL MULTIEMPRESA</div>
+      <div class="subtitle">Selecione a empresa para gerir</div>
     </div>
     <button class="icon-btn" id="backupBtn" title="Exportar backup">💾</button>
   </header>
@@ -37,7 +32,7 @@
   <main id="content"></main>
 
   <!-- Navegação Inferior -->
-  <nav class="bottom-nav">
+  <nav class="bottom-nav" id="bottomNav" style="display:none;">
     <button data-page="dashboard" class="active">🏠<span>Início</span></button>
     <button data-page="clientes">👥<span>Clientes</span></button>
     <button data-page="produtos">📦<span>Produtos</span></button>
@@ -46,10 +41,8 @@
   </nav>
 </div>
 
-<!-- Script Principal -->
 <script src="app.js"></script>
 
-<!-- Registo do Service Worker para PWA -->
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
