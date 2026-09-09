@@ -1,0 +1,10 @@
+CAIXA PRO PWA
+
+1. Para testar no PC, abra a pasta no VS Code.
+2. Instale a extensão Live Server.
+3. Clique com o botão direito em index.html > Open with Live Server.
+4. Para instalar no iPhone, publique a pasta num serviço HTTPS (por exemplo GitHub Pages ou Netlify).
+5. Abra no Safari do iPhone > Partilhar > Adicionar ao Ecrã Principal.
+
+IMPORTANTE: os dados ficam guardados no navegador deste dispositivo.
+Use regularmente o botão de exportar backup.
