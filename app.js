@@ -37,6 +37,8 @@ function renderPage(pageKey) {
 
   if (pageKey === 'dashboard') {
     const totalVendas = db.vendas.reduce((acc, v) => acc + (v.total || 0), 0);
+    const totalCusto = db.vendas.reduce((acc, v) => acc + (v.custoTotal || 0), 0);
+    const lucroTotal = totalVendas - totalCusto;
 
     content.innerHTML = `
       <button class="btn-novo-pedido" id="btnNovoPedido">
@@ -68,11 +70,12 @@ function renderPage(pageKey) {
       </div>
 
       <div class="card">
-        <h3>📈 INDICADORES RÁPIDOS</h3>
+        <h3>📈 INDICADORES FINANCEIROS</h3>
         <p><strong>Total Faturado:</strong> € ${totalVendas.toFixed(2)}</p>
+        <p><strong>Custo das Mercadorias:</strong> € ${totalCusto.toFixed(2)}</p>
+        <p><strong>Lucro Líquido:</strong> <span style="color:#10b981; font-weight:bold;">€ ${lucroTotal.toFixed(2)}</span></p>
         <p><strong>Vendas Realizadas:</strong> ${db.vendas.length}</p>
-        <p><strong>Clientes Cadastrados:</strong> ${db.clientes.length}</p>
-        <p><strong>Produtos no Catálogo:</strong> ${db.produtos.length}</p>
+        <p><strong>Produtos Cadastrados:</strong> ${db.produtos.length}</p>
       </div>
     `;
 
@@ -80,7 +83,7 @@ function renderPage(pageKey) {
       mudarAba('venda');
     });
 
-    // Lógica para gerar os dados dos últimos 7 dias no gráfico
+    // Gráfico dos últimos 7 dias
     const ultimosDias = [];
     const totaisPorDia = [];
 
@@ -155,34 +158,91 @@ function renderPage(pageKey) {
 
   else if (pageKey === 'produtos') {
     content.innerHTML = `
-      <h2>📦 Produtos</h2>
+      <h2>📦 Gestão de Produtos e Estoque</h2>
+
+      <!-- Form para novo produto -->
       <div class="card">
-        <h3>Cadastrar Novo Produto</h3>
-        <form id="formProduto" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
+        <h3>➕ Cadastrar Novo Produto</h3>
+        <form id="formProduto" style="display:flex; flex-direction:column; gap:8px;">
           <input type="text" id="nomeProduto" placeholder="Nome do produto" required>
-          <input type="number" step="0.01" id="precoProduto" placeholder="Preço (€)" required>
-          <input type="number" id="stockProduto" placeholder="Quantidade em Stock" required>
-          <button type="submit" class="btn-submit">Adicionar Produto</button>
+          <div style="display:flex; gap:8px;">
+            <input type="number" step="0.01" id="custoProduto" placeholder="Preço Custo (€)" required>
+            <input type="number" step="0.01" id="vendaProduto" placeholder="Preço Venda (€)" required>
+          </div>
+          <input type="number" id="stockProduto" placeholder="Quantidade Inicial Estoque" required>
+          <button type="submit" class="btn-submit">Cadastrar Produto</button>
         </form>
       </div>
+
+      <!-- Form para entrada de estoque existente -->
       <div class="card">
-        <h3>Catálogo de Produtos</h3>
+        <h3>📥 Dar Entrada no Estoque (Reposição)</h3>
+        <form id="formEntradaEstoque" style="display:flex; flex-direction:column; gap:8px;">
+          <select id="selectProdutoEntrada" required>
+            <option value="">-- Selecione o Produto --</option>
+            ${db.produtos.map(p => `<option value="${p.id}">${p.nome} (Atual: ${p.stock})</option>`).join('')}
+          </select>
+          <input type="number" id="qtdEntrada" placeholder="Quantidade a adicionar" min="1" required>
+          <button type="submit" class="btn-submit" style="background:#059669;">Adicionar ao Estoque</button>
+        </form>
+      </div>
+
+      <!-- Catálogo de produtos com custos e lucro -->
+      <div class="card">
+        <h3>📋 Catálogo de Produtos</h3>
         ${db.produtos.length === 0 ? '<p>Nenhum produto cadastrado.</p>' : ''}
         <ul>
-          ${db.produtos.map(p => `<li><strong>${p.nome}</strong> - €${Number(p.preco).toFixed(2)} (Stock: ${p.stock})</li>`).join('')}
+          ${db.produtos.map(p => {
+            const lucroUnit = (p.precoVenda || p.preco) - (p.precoCusto || 0);
+            return `
+              <li style="margin-bottom:10px; padding-bottom:8px;">
+                <strong>${p.nome}</strong><br>
+                <span>Stock: <b>${p.stock} un.</b></span> | 
+                <span>Custo: €${Number(p.precoCusto || 0).toFixed(2)}</span> | 
+                <span>Venda: €${Number(p.precoVenda || p.preco).toFixed(2)}</span><br>
+                <small style="color:#10b981; font-weight:bold;">Lucro un.: €${lucroUnit.toFixed(2)}</small>
+              </li>
+            `;
+          }).join('')}
         </ul>
       </div>
     `;
 
+    // Evento cadastrar novo produto
     document.getElementById('formProduto').addEventListener('submit', (e) => {
       e.preventDefault();
       const nome = document.getElementById('nomeProduto').value.trim();
-      const preco = parseFloat(document.getElementById('precoProduto').value);
+      const precoCusto = parseFloat(document.getElementById('custoProduto').value);
+      const precoVenda = parseFloat(document.getElementById('vendaProduto').value);
       const stock = parseInt(document.getElementById('stockProduto').value);
 
-      db.produtos.push({ id: Date.now(), nome, preco, stock });
+      db.produtos.push({
+        id: Date.now(),
+        nome,
+        precoCusto,
+        precoVenda,
+        preco: precoVenda,
+        stock
+      });
+
       saveData(db);
+      alert('Produto cadastrado com sucesso!');
       renderPage('produtos');
+    });
+
+    // Evento dar entrada em produto existente
+    document.getElementById('formEntradaEstoque').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const prodId = parseInt(document.getElementById('selectProdutoEntrada').value);
+      const qtdAdd = parseInt(document.getElementById('qtdEntrada').value);
+
+      const produto = db.produtos.find(p => p.id === prodId);
+      if (produto) {
+        produto.stock += qtdAdd;
+        saveData(db);
+        alert(`Foram adicionadas ${qtdAdd} unidades ao produto ${produto.nome}!`);
+        renderPage('produtos');
+      }
     });
   }
 
@@ -200,7 +260,7 @@ function renderPage(pageKey) {
           <label>Produto:</label>
           <select id="selectProduto" required>
             <option value="">-- Selecione o produto --</option>
-            ${db.produtos.map(p => `<option value="${p.id}">${p.nome} (€${Number(p.preco).toFixed(2)} - Stock: ${p.stock})</option>`).join('')}
+            ${db.produtos.map(p => `<option value="${p.id}">${p.nome} (€${Number(p.precoVenda || p.preco).toFixed(2)} - Stock: ${p.stock})</option>`).join('')}
           </select>
 
           <label>Quantidade:</label>
@@ -214,7 +274,13 @@ function renderPage(pageKey) {
         <h3>Histórico de Vendas</h3>
         ${db.vendas.length === 0 ? '<p>Nenhuma venda realizada.</p>' : ''}
         <ul>
-          ${db.vendas.map(v => `<li><strong>${v.data}</strong> - ${v.cliente}: ${v.produto} (${v.qtd}x) = €${v.total.toFixed(2)}</li>`).join('')}
+          ${db.vendas.map(v => `
+            <li>
+              <strong>${v.data}</strong> - ${v.cliente}<br>
+              ${v.produto} (${v.qtd}x) = €${v.total.toFixed(2)}
+              <br><small style="color:#10b981;">Lucro desta venda: €${(v.lucro || 0).toFixed(2)}</small>
+            </li>
+          `).join('')}
         </ul>
       </div>
     `;
@@ -237,8 +303,15 @@ function renderPage(pageKey) {
         return;
       }
 
+      // Baixa no estoque
       produto.stock -= qtd;
-      const total = produto.preco * qtd;
+
+      const precoVenda = produto.precoVenda || produto.preco;
+      const precoCusto = produto.precoCusto || 0;
+
+      const total = precoVenda * qtd;
+      const custoTotal = precoCusto * qtd;
+      const lucro = total - custoTotal;
 
       db.vendas.push({
         id: Date.now(),
@@ -246,11 +319,13 @@ function renderPage(pageKey) {
         cliente: clienteNome,
         produto: produto.nome,
         qtd,
-        total
+        total,
+        custoTotal,
+        lucro
       });
 
       saveData(db);
-      alert('Venda realizada com sucesso!');
+      alert(`Venda efetuada com sucesso! Lucro: € ${lucro.toFixed(2)}`);
       renderPage('venda');
     });
   }
