@@ -17,17 +17,17 @@ function seedData() {
 }
 
 function loadData() {
-  const data = localStorage.getItem('caixa_pro_db');
+  const data = localStorage.getItem('giacometti_farm_db');
   if (!data) {
     const initialData = seedData();
-    localStorage.setItem('caixa_pro_db', JSON.stringify(initialData));
+    localStorage.setItem('giacometti_farm_db', JSON.stringify(initialData));
     return initialData;
   }
   return JSON.parse(data);
 }
 
 function saveData(data) {
-  localStorage.setItem('caixa_pro_db', JSON.stringify(data));
+  localStorage.setItem('giacometti_farm_db', JSON.stringify(data));
 }
 
 // 3. Sistema de renderização de páginas
@@ -41,41 +41,47 @@ function renderPage(pageKey) {
     const lucroTotal = totalVendas - totalCusto;
 
     content.innerHTML = `
+      <div class="card-banner">
+        <div>
+          <h3>Olá, Rafael! 👋</h3>
+          <p>Painel de controlo - Giacometti Farm</p>
+        </div>
+        <div class="avatar">🚜</div>
+      </div>
+
       <button class="btn-novo-pedido" id="btnNovoPedido">
-        <span>➕</span> NOVO PEDIDO
+        <span>➕</span> REGISTAR NOVA VENDA
       </button>
 
       <div class="grid-atalhos">
         <div class="card-atalho" onclick="mudarAba('venda')">
-          <span class="icon">🛒</span>
-          <span class="label">Pedidos</span>
+          <div class="icon-circle">🛒</div>
+          <span class="label">Vender</span>
         </div>
         <div class="card-atalho" onclick="mudarAba('clientes')">
-          <span class="icon">👥</span>
+          <div class="icon-circle">👥</div>
           <span class="label">Clientes</span>
         </div>
         <div class="card-atalho" onclick="mudarAba('produtos')">
-          <span class="icon">📦</span>
+          <div class="icon-circle">📦</div>
           <span class="label">Produtos</span>
         </div>
         <div class="card-atalho" onclick="mudarAba('mais')">
-          <span class="icon">📈</span>
-          <span class="label">Relatórios</span>
+          <div class="icon-circle">⚡</div>
+          <span class="label">Mais</span>
         </div>
       </div>
 
       <div class="card">
-        <h3>📊 DESEMPENHO DE VENDAS (ÚLTIMOS DIAS)</h3>
-        <canvas id="graficoVendas" style="width:100%; max-height:200px;"></canvas>
+        <h3>📊 Desempenho de Vendas</h3>
+        <canvas id="graficoVendas" style="width:100%; max-height:180px;"></canvas>
       </div>
 
       <div class="card">
-        <h3>📈 INDICADORES FINANCEIROS</h3>
+        <h3>📈 Indicadores Financeiros</h3>
         <p><strong>Total Faturado:</strong> € ${totalVendas.toFixed(2)}</p>
         <p><strong>Custo das Mercadorias:</strong> € ${totalCusto.toFixed(2)}</p>
         <p><strong>Lucro Líquido:</strong> <span style="color:#10b981; font-weight:bold;">€ ${lucroTotal.toFixed(2)}</span></p>
-        <p><strong>Vendas Realizadas:</strong> ${db.vendas.length}</p>
-        <p><strong>Produtos Cadastrados:</strong> ${db.produtos.length}</p>
       </div>
     `;
 
@@ -83,7 +89,7 @@ function renderPage(pageKey) {
       mudarAba('venda');
     });
 
-    // Gráfico dos últimos 7 dias
+    // Lógica do Gráfico de Vendas
     const ultimosDias = [];
     const totaisPorDia = [];
 
@@ -109,8 +115,8 @@ function renderPage(pageKey) {
           datasets: [{
             label: 'Vendas (€)',
             data: totaisPorDia,
-            backgroundColor: '#1e40af',
-            borderRadius: 6
+            backgroundColor: '#3b82f6',
+            borderRadius: 8
           }]
         },
         options: {
@@ -127,17 +133,17 @@ function renderPage(pageKey) {
 
   else if (pageKey === 'clientes') {
     content.innerHTML = `
-      <h2>👥 Clientes</h2>
+      <h2>👥 Gestão de Clientes</h2>
       <div class="card">
-        <h3>Cadastrar Novo Cliente</h3>
-        <form id="formCliente" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
+        <h3>➕ Cadastrar Novo Cliente</h3>
+        <form id="formCliente" style="display:flex; flex-direction:column; gap:8px;">
           <input type="text" id="nomeCliente" placeholder="Nome do cliente" required>
           <input type="tel" id="telCliente" placeholder="Telefone / Contato" required>
           <button type="submit" class="btn-submit">Adicionar Cliente</button>
         </form>
       </div>
       <div class="card">
-        <h3>Lista de Clientes</h3>
+        <h3>📋 Lista de Clientes</h3>
         ${db.clientes.length === 0 ? '<p>Nenhum cliente cadastrado.</p>' : ''}
         <ul>
           ${db.clientes.map(c => `<li><strong>${c.nome}</strong> - ${c.telefone}</li>`).join('')}
@@ -158,9 +164,8 @@ function renderPage(pageKey) {
 
   else if (pageKey === 'produtos') {
     content.innerHTML = `
-      <h2>📦 Gestão de Produtos e Estoque</h2>
+      <h2>📦 Gestão de Produtos e Stock</h2>
 
-      <!-- Form para novo produto -->
       <div class="card">
         <h3>➕ Cadastrar Novo Produto</h3>
         <form id="formProduto" style="display:flex; flex-direction:column; gap:8px;">
@@ -169,25 +174,23 @@ function renderPage(pageKey) {
             <input type="number" step="0.01" id="custoProduto" placeholder="Preço Custo (€)" required>
             <input type="number" step="0.01" id="vendaProduto" placeholder="Preço Venda (€)" required>
           </div>
-          <input type="number" id="stockProduto" placeholder="Quantidade Inicial Estoque" required>
+          <input type="number" id="stockProduto" placeholder="Quantidade Inicial Stock" required>
           <button type="submit" class="btn-submit">Cadastrar Produto</button>
         </form>
       </div>
 
-      <!-- Form para entrada de estoque existente -->
       <div class="card">
-        <h3>📥 Dar Entrada no Estoque (Reposição)</h3>
+        <h3>📥 Dar Entrada no Stock (Reposição)</h3>
         <form id="formEntradaEstoque" style="display:flex; flex-direction:column; gap:8px;">
           <select id="selectProdutoEntrada" required>
             <option value="">-- Selecione o Produto --</option>
             ${db.produtos.map(p => `<option value="${p.id}">${p.nome} (Atual: ${p.stock})</option>`).join('')}
           </select>
           <input type="number" id="qtdEntrada" placeholder="Quantidade a adicionar" min="1" required>
-          <button type="submit" class="btn-submit" style="background:#059669;">Adicionar ao Estoque</button>
+          <button type="submit" class="btn-submit" style="background:#10b981;">Adicionar ao Stock</button>
         </form>
       </div>
 
-      <!-- Catálogo de produtos com custos e lucro -->
       <div class="card">
         <h3>📋 Catálogo de Produtos</h3>
         ${db.produtos.length === 0 ? '<p>Nenhum produto cadastrado.</p>' : ''}
@@ -208,7 +211,6 @@ function renderPage(pageKey) {
       </div>
     `;
 
-    // Evento cadastrar novo produto
     document.getElementById('formProduto').addEventListener('submit', (e) => {
       e.preventDefault();
       const nome = document.getElementById('nomeProduto').value.trim();
@@ -230,7 +232,6 @@ function renderPage(pageKey) {
       renderPage('produtos');
     });
 
-    // Evento dar entrada em produto existente
     document.getElementById('formEntradaEstoque').addEventListener('submit', (e) => {
       e.preventDefault();
       const prodId = parseInt(document.getElementById('selectProdutoEntrada').value);
@@ -266,19 +267,19 @@ function renderPage(pageKey) {
           <label>Quantidade:</label>
           <input type="number" id="qtdVenda" value="1" min="1" required>
 
-          <button type="submit" class="btn-submit" style="background:var(--accent-green);">Finalizar Venda</button>
+          <button type="submit" class="btn-submit" style="background:#10b981;">Finalizar Venda</button>
         </form>
       </div>
 
       <div class="card">
-        <h3>Histórico de Vendas</h3>
+        <h3>📋 Histórico de Vendas</h3>
         ${db.vendas.length === 0 ? '<p>Nenhuma venda realizada.</p>' : ''}
         <ul>
           ${db.vendas.map(v => `
             <li>
               <strong>${v.data}</strong> - ${v.cliente}<br>
               ${v.produto} (${v.qtd}x) = €${v.total.toFixed(2)}
-              <br><small style="color:#10b981;">Lucro desta venda: €${(v.lucro || 0).toFixed(2)}</small>
+              <br><small style="color:#10b981; font-weight:bold;">Lucro desta venda: €${(v.lucro || 0).toFixed(2)}</small>
             </li>
           `).join('')}
         </ul>
@@ -303,7 +304,6 @@ function renderPage(pageKey) {
         return;
       }
 
-      // Baixa no estoque
       produto.stock -= qtd;
 
       const precoVenda = produto.precoVenda || produto.preco;
@@ -332,10 +332,11 @@ function renderPage(pageKey) {
 
   else if (pageKey === 'mais') {
     content.innerHTML = `
-      <h2>☰ Mais / Configurações</h2>
+      <h2>⚡ Configurações & Dados</h2>
       <div class="card">
         <h3>Gerenciamento de Dados</h3>
-        <button id="resetDataBtn" style="padding:10px; width:100%; background:#ef4444; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Apagar Todos os Dados</button>
+        <p style="margin-bottom:12px;">Se quiser resetar completamente a aplicação:</p>
+        <button id="resetDataBtn" style="padding:12px; width:100%; background:#ef4444; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Apagar Todos os Dados</button>
       </div>
     `;
 
@@ -343,7 +344,7 @@ function renderPage(pageKey) {
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
         if (confirm('Atenção: deseja apagar todos os dados registrados?')) {
-          localStorage.removeItem('caixa_pro_db');
+          localStorage.removeItem('giacometti_farm_db');
           location.reload();
         }
       });
@@ -374,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `caixa_pro_backup_${today}.json`);
+      downloadAnchor.setAttribute("download", `giacometti_farm_backup_${today}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();

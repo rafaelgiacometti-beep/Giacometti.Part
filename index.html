@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1e3a8a">
+  <meta name="theme-color" content="#3b82f6">
   
-  <!-- Meta tags PWA atualizadas -->
+  <!-- Meta tags PWA -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Caixa Pro</title>
+  <title>Giacometti Farm</title>
   
-  <!-- Ícone e PWA Manifest -->
+  <!-- Ícones e Manifest -->
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
@@ -18,25 +18,25 @@
   <!-- Estilos CSS -->
   <link rel="stylesheet" href="style.css">
   
-  <!-- Biblioteca para os Gráficos (Chart.js) -->
+  <!-- Biblioteca de Gráficos Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <div id="app">
-  <!-- Barra Superior (Header Azul) -->
+  <!-- Barra Superior -->
   <header class="topbar">
     <div>
-      <div class="brand">💰 CAIXA PRO</div>
-      <div class="subtitle">Vendas e controlo financeiro</div>
+      <div class="brand">🚜 GIACOMETTI FARM</div>
+      <div class="subtitle">Gestão & Controlo Financeiro</div>
     </div>
     <button class="icon-btn" id="backupBtn" title="Exportar backup">💾</button>
   </header>
 
-  <!-- Conteúdo Dinâmico (Renderizado pelo app.js) -->
+  <!-- Conteúdo Dinâmico -->
   <main id="content"></main>
 
-  <!-- Navegação Inferior (Bottom Nav) -->
+  <!-- Navegação Inferior -->
   <nav class="bottom-nav">
     <button data-page="dashboard" class="active">🏠<span>Início</span></button>
     <button data-page="clientes">👥<span>Clientes</span></button>
@@ -46,18 +46,10 @@
   </nav>
 </div>
 
-<!-- Modal Genérico para Avisos e Confirmações -->
-<div id="modal" class="modal hidden">
-  <div class="modal-card">
-    <button id="modalClose" class="close">×</button>
-    <div id="modalContent"></div>
-  </div>
-</div>
-
-<!-- Script Principal da Aplicação -->
+<!-- Script Principal -->
 <script src="app.js"></script>
 
-<!-- Registo do Service Worker para PWA / Funcionalidade Offline -->
+<!-- Registo do Service Worker para PWA -->
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
