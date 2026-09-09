@@ -1,6 +1,12 @@
 // 1. Variáveis globais e utilitários
 const today = new Date().toISOString().split('T')[0];
 
+window.mudarAba = function(aba) {
+  const btn = document.querySelector(`.bottom-nav button[data-page="${aba}"]`);
+  if (btn) btn.click();
+  else renderPage(aba);
+};
+
 // 2. Estado inicial e persistência de dados
 function seedData() {
   return {
@@ -31,16 +37,89 @@ function renderPage(pageKey) {
 
   if (pageKey === 'dashboard') {
     const totalVendas = db.vendas.reduce((acc, v) => acc + (v.total || 0), 0);
+
     content.innerHTML = `
-      <h2>🏠 Início</h2>
+      <button class="btn-novo-pedido" id="btnNovoPedido">
+        <span>➕</span> NOVO PEDIDO
+      </button>
+
+      <div class="grid-atalhos">
+        <div class="card-atalho" onclick="mudarAba('venda')">
+          <span class="icon">🛒</span>
+          <span class="label">Pedidos</span>
+        </div>
+        <div class="card-atalho" onclick="mudarAba('clientes')">
+          <span class="icon">👥</span>
+          <span class="label">Clientes</span>
+        </div>
+        <div class="card-atalho" onclick="mudarAba('produtos')">
+          <span class="icon">📦</span>
+          <span class="label">Produtos</span>
+        </div>
+        <div class="card-atalho" onclick="mudarAba('mais')">
+          <span class="icon">📈</span>
+          <span class="label">Relatórios</span>
+        </div>
+      </div>
+
       <div class="card">
-        <p><strong>Data de hoje:</strong> ${today}</p>
+        <h3>📊 DESEMPENHO DE VENDAS (ÚLTIMOS DIAS)</h3>
+        <canvas id="graficoVendas" style="width:100%; max-height:200px;"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>📈 INDICADORES RÁPIDOS</h3>
         <p><strong>Total Faturado:</strong> € ${totalVendas.toFixed(2)}</p>
-        <p><strong>Total de Vendas:</strong> ${db.vendas.length}</p>
+        <p><strong>Vendas Realizadas:</strong> ${db.vendas.length}</p>
         <p><strong>Clientes Cadastrados:</strong> ${db.clientes.length}</p>
         <p><strong>Produtos no Catálogo:</strong> ${db.produtos.length}</p>
       </div>
     `;
+
+    document.getElementById('btnNovoPedido').addEventListener('click', () => {
+      mudarAba('venda');
+    });
+
+    // Lógica para gerar os dados dos últimos 7 dias no gráfico
+    const ultimosDias = [];
+    const totaisPorDia = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dataFormatada = d.toISOString().split('T')[0];
+      
+      const totalDia = db.vendas
+        .filter(v => v.data === dataFormatada)
+        .reduce((sum, v) => sum + (v.total || 0), 0);
+
+      ultimosDias.push(dataFormatada.slice(8, 10) + '/' + dataFormatada.slice(5, 7));
+      totaisPorDia.push(totalDia);
+    }
+
+    if (typeof Chart !== 'undefined') {
+      const ctx = document.getElementById('graficoVendas').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ultimosDias,
+          datasets: [{
+            label: 'Vendas (€)',
+            data: totaisPorDia,
+            backgroundColor: '#1e40af',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { display: false } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
   }
 
   else if (pageKey === 'clientes') {
@@ -49,9 +128,9 @@ function renderPage(pageKey) {
       <div class="card">
         <h3>Cadastrar Novo Cliente</h3>
         <form id="formCliente" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
-          <input type="text" id="nomeCliente" placeholder="Nome do cliente" required style="padding:8px;">
-          <input type="tel" id="telCliente" placeholder="Telefone / Contato" required style="padding:8px;">
-          <button type="submit" class="btn" style="padding:10px; background:#10B981; color:#fff; border:none; border-radius:4px; cursor:pointer;">Adicionar Cliente</button>
+          <input type="text" id="nomeCliente" placeholder="Nome do cliente" required>
+          <input type="tel" id="telCliente" placeholder="Telefone / Contato" required>
+          <button type="submit" class="btn-submit">Adicionar Cliente</button>
         </form>
       </div>
       <div class="card">
@@ -80,10 +159,10 @@ function renderPage(pageKey) {
       <div class="card">
         <h3>Cadastrar Novo Produto</h3>
         <form id="formProduto" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
-          <input type="text" id="nomeProduto" placeholder="Nome do produto" required style="padding:8px;">
-          <input type="number" step="0.01" id="precoProduto" placeholder="Preço (€)" required style="padding:8px;">
-          <input type="number" id="stockProduto" placeholder="Quantidade em Stock" required style="padding:8px;">
-          <button type="submit" class="btn" style="padding:10px; background:#10B981; color:#fff; border:none; border-radius:4px; cursor:pointer;">Adicionar Produto</button>
+          <input type="text" id="nomeProduto" placeholder="Nome do produto" required>
+          <input type="number" step="0.01" id="precoProduto" placeholder="Preço (€)" required>
+          <input type="number" id="stockProduto" placeholder="Quantidade em Stock" required>
+          <button type="submit" class="btn-submit">Adicionar Produto</button>
         </form>
       </div>
       <div class="card">
@@ -112,22 +191,22 @@ function renderPage(pageKey) {
       <h2>🛒 Registar Venda</h2>
       <div class="card">
         <form id="formVenda" style="display:flex; flex-direction:column; gap:10px;">
-          <label><strong>Cliente:</strong></label>
-          <select id="selectCliente" required style="padding:8px;">
+          <label>Cliente:</label>
+          <select id="selectCliente" required>
             <option value="">-- Selecione o cliente --</option>
             ${db.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('')}
           </select>
 
-          <label><strong>Produto:</strong></label>
-          <select id="selectProduto" required style="padding:8px;">
+          <label>Produto:</label>
+          <select id="selectProduto" required>
             <option value="">-- Selecione o produto --</option>
             ${db.produtos.map(p => `<option value="${p.id}">${p.nome} (€${Number(p.preco).toFixed(2)} - Stock: ${p.stock})</option>`).join('')}
           </select>
 
-          <label><strong>Quantidade:</strong></label>
-          <input type="number" id="qtdVenda" value="1" min="1" required style="padding:8px;">
+          <label>Quantidade:</label>
+          <input type="number" id="qtdVenda" value="1" min="1" required>
 
-          <button type="submit" class="btn" style="padding:12px; background:#10B981; color:#fff; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">Finalizar Venda</button>
+          <button type="submit" class="btn-submit" style="background:var(--accent-green);">Finalizar Venda</button>
         </form>
       </div>
 
@@ -158,7 +237,6 @@ function renderPage(pageKey) {
         return;
       }
 
-      // Baixa no estoque e registro da venda
       produto.stock -= qtd;
       const total = produto.preco * qtd;
 
@@ -179,10 +257,10 @@ function renderPage(pageKey) {
 
   else if (pageKey === 'mais') {
     content.innerHTML = `
-      <h2>☰ Mais</h2>
+      <h2>☰ Mais / Configurações</h2>
       <div class="card">
-        <p>Configurações do Caixa Pro.</p>
-        <button id="resetDataBtn" style="padding:8px; background:#EF4444; color:#fff; border:none; border-radius:4px; cursor:pointer;">Apagar Todos os Dados</button>
+        <h3>Gerenciamento de Dados</h3>
+        <button id="resetDataBtn" style="padding:10px; width:100%; background:#ef4444; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Apagar Todos os Dados</button>
       </div>
     `;
 
@@ -204,7 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const navButtons = document.querySelectorAll('.bottom-nav button');
   const backupBtn = document.getElementById('backupBtn');
 
-  // Navegação no menu inferior
   navButtons.forEach(button => {
     button.addEventListener('click', (e) => {
       e.preventDefault();
@@ -217,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Backup dos dados
   if (backupBtn) {
     backupBtn.addEventListener('click', () => {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
@@ -230,6 +306,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Carrega a aba inicial
   renderPage('dashboard');
 });
