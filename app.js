@@ -4,7 +4,7 @@ let accessToken = null;
 
 // --- ESTADO DA APLICAÇÃO ---
 const today = new Date().toISOString().split('T')[0];
-let currentCompany = localStorage.getItem('selected_company') || null;
+let activeCompany = localStorage.getItem('selected_company') || null;
 
 window.mudarAba = function(aba) {
   const btn = document.querySelector(`.bottom-nav button[data-page="${aba}"]`);
@@ -13,7 +13,7 @@ window.mudarAba = function(aba) {
 };
 
 window.selecionarEmpresa = function(empresa) {
-  currentCompany = empresa;
+  activeCompany = empresa;
   localStorage.setItem('selected_company', empresa);
   const nav = document.getElementById('bottomNav');
   if (nav) nav.style.display = 'flex';
@@ -21,7 +21,7 @@ window.selecionarEmpresa = function(empresa) {
 };
 
 window.trocarEmpresa = function() {
-  currentCompany = null;
+  activeCompany = null;
   localStorage.removeItem('selected_company');
   const nav = document.getElementById('bottomNav');
   if (nav) nav.style.display = 'none';
@@ -29,7 +29,7 @@ window.trocarEmpresa = function() {
 };
 
 function getDbKey() {
-  return currentCompany === 'rg3d' ? 'rg3d_db' : 'g_peptides_db';[cite: 1]
+  return activeCompany === 'rg3d' ? 'rg3d_db' : 'g_peptides_db';[cite: 1]
 }
 
 function loadData() {
@@ -54,7 +54,7 @@ function saveData(data) {
   }
 }
 
-// --- INTEGRACAO GOOGLE DRIVE API ---
+// --- INTEGRAÇÃO GOOGLE DRIVE API ---
 window.initGoogleAuth = function() {
   if (typeof google === 'undefined' || !google.accounts) {
     alert('A biblioteca do Google ainda está a carregar. Tente novamente em alguns segundos.');
@@ -67,19 +67,19 @@ window.initGoogleAuth = function() {
       callback: (tokenResponse) => {
         if (tokenResponse.access_token) {
           accessToken = tokenResponse.access_token;
-          alert('Sincronização com o Google Drive ativada com sucesso!');
+          alert('Sincronização com o Google Drive ativada!');
           syncToDrive();
         }
       },
     });
     client.requestAccessToken();
   } catch(e) {
-    alert('Erro ao iniciar a autenticação com o Google.');
+    alert('Erro ao iniciar login do Google.');
   }
 };
 
 async function syncToDrive() {
-  if (!accessToken || !currentCompany) return;
+  if (!accessToken || !activeCompany) return;
   const db = loadData();
   const fileName = `${getDbKey()}_backup.json`;
   const fileContent = JSON.stringify(db, null, 2);
@@ -101,7 +101,7 @@ async function syncToDrive() {
   }
 }
 
-// --- PROCESSADOR DE FICHEIROS STL (RG3D) ---
+// --- PROCESSADOR STL (RG3D) ---
 function processSTL(file, fillDensity = 0.20) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -148,7 +148,7 @@ function processSTL(file, fillDensity = 0.20) {
   });
 }
 
-// --- RENDERIZAÇÃO DAS PÁGINAS ---
+// --- RENDERIZAÇÃO DE TELAS ---
 function renderCompanySelection() {
   const content = document.getElementById('content');
   const topbarBrand = document.querySelector('.topbar .brand');
@@ -185,7 +185,7 @@ function renderCompanySelection() {
 }
 
 function renderPage(pageKey) {
-  if (!currentCompany) {
+  if (!activeCompany) {
     const nav = document.getElementById('bottomNav');
     if (nav) nav.style.display = 'none';
     renderCompanySelection();
@@ -197,7 +197,7 @@ function renderPage(pageKey) {
   const topbarBrand = document.querySelector('.topbar .brand');
   const topbarSub = document.querySelector('.topbar .subtitle');
 
-  if (currentCompany === 'rg3d') {[cite: 1]
+  if (activeCompany === 'rg3d') {[cite: 1]
     if (topbarBrand) topbarBrand.textContent = "🖨️ RG3D";[cite: 1]
     if (topbarSub) topbarSub.textContent = "Sua ideia ganha forma.";[cite: 1]
   } else {
@@ -213,12 +213,12 @@ function renderPage(pageKey) {
     const lucroTotal = totalVendas - totalCusto;
 
     content.innerHTML = `
-      <div class="card-banner" style="background: ${currentCompany === 'rg3d' ? 'var(--gradient-rg3d)' : 'var(--gradient-blue)'}">[cite: 1]
+      <div class="card-banner" style="background: ${activeCompany === 'rg3d' ? 'var(--gradient-rg3d)' : 'var(--gradient-blue)'}">[cite: 1]
         <div>
-          <h3>${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'} 👋</h3>[cite: 1]
-          <p>${currentCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo'}</p>[cite: 1]
+          <h3>${activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'} 👋</h3>[cite: 1]
+          <p>${activeCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo'}</p>[cite: 1]
         </div>
-        <div class="avatar">${currentCompany === 'rg3d' ? '🖨️' : '🧪'}</div>[cite: 1]
+        <div class="avatar">${activeCompany === 'rg3d' ? '🖨️' : '🧪'}</div>[cite: 1]
       </div>
 
       <button class="btn-novo-pedido" id="btnNovoPedido">
@@ -236,7 +236,7 @@ function renderPage(pageKey) {
         </div>
         <div class="card-atalho" onclick="mudarAba('produtos')">
           <div class="icon-circle">📦</div>
-          <span class="label">${currentCompany === 'rg3d' ? 'Modelos/Filamentos' : 'Produtos'}</span>[cite: 1]
+          <span class="label">${activeCompany === 'rg3d' ? 'Modelos/Filamentos' : 'Produtos'}</span>[cite: 1]
         </div>
         <div class="card-atalho" onclick="mudarAba('mais')">
           <div class="icon-circle">⚡</div>
@@ -287,7 +287,7 @@ function renderPage(pageKey) {
             datasets: [{
               label: 'Vendas (€)',
               data: totaisPorDia,
-              backgroundColor: currentCompany === 'rg3d' ? '#10b981' : '#3b82f6',[cite: 1]
+              backgroundColor: activeCompany === 'rg3d' ? '#10b981' : '#3b82f6',[cite: 1]
               borderRadius: 8
             }]
           },
@@ -312,7 +312,7 @@ function renderPage(pageKey) {
         <form id="formCliente" style="display:flex; flex-direction:column; gap:8px;">
           <input type="text" id="nomeCliente" placeholder="Nome do cliente" required>
           <input type="tel" id="telCliente" placeholder="Telefone / Contato" required>
-          <button type="submit" class="btn-submit" style="background:${currentCompany === 'rg3d' ? '#10b981' : '#3b82f6'};">Adicionar Cliente</button>[cite: 1]
+          <button type="submit" class="btn-submit" style="background:${activeCompany === 'rg3d' ? '#10b981' : '#3b82f6'};">Adicionar Cliente</button>[cite: 1]
         </form>
       </div>
       <div class="card">
@@ -333,7 +333,7 @@ function renderPage(pageKey) {
   }
 
   else if (pageKey === 'produtos') {
-    const is3D = currentCompany === 'rg3d';[cite: 1]
+    const is3D = activeCompany === 'rg3d';[cite: 1]
     content.innerHTML = `
       <h2>📦 ${is3D ? 'Catálogo RG3D & Filamentos' : 'Gestão de Peptídeos'}</h2>[cite: 1]
 
@@ -530,14 +530,14 @@ function renderPage(pageKey) {
       </div>
 
       <div class="card">
-        <h3>⚠️ Gerenciamento de Dados (${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'})</h3>[cite: 1]
+        <h3>⚠️ Gerenciamento de Dados (${activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'})</h3>[cite: 1]
         <p style="margin-bottom:12px;">Apaga os dados apenas da empresa atual:</p>
         <button id="resetDataBtn" style="padding:12px; width:100%; background:#ef4444; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Apagar Dados desta Empresa</button>
       </div>
     `;
 
     document.getElementById('resetDataBtn').addEventListener('click', () => {
-      if (confirm(`Deseja apagar todos os dados de ${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'}?`)) {[cite: 1]
+      if (confirm(`Deseja apagar todos os dados de ${activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'}?`)) {[cite: 1]
         localStorage.removeItem(getDbKey());
         location.reload();
       }
@@ -545,7 +545,7 @@ function renderPage(pageKey) {
   }
 }
 
-// --- INICIALIZAÇÃO ---
+// --- INICIALIZAÇÃO AUTOMÁTICA ---
 document.addEventListener('DOMContentLoaded', () => {
   const navButtons = document.querySelectorAll('.bottom-nav button');
   const backupBtn = document.getElementById('backupBtn');
@@ -562,12 +562,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (backupBtn) {
     backupBtn.addEventListener('click', () => {
-      if (!currentCompany) return alert('Selecione uma empresa primeiro.');
+      if (!activeCompany) return alert('Selecione uma empresa primeiro.');
       const db = loadData();
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `${currentCompany}_backup_${today}.json`);
+      downloadAnchor.setAttribute("download", `${activeCompany}_backup_${today}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -580,8 +580,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Renderiza a página
-  if (currentCompany) {
+  // Executa imediatamente a renderização da tela
+  if (activeCompany) {
     const nav = document.getElementById('bottomNav');
     if (nav) nav.style.display = 'flex';
     renderPage('dashboard');

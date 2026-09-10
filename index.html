@@ -9,10 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Giacometti Hub</title>
   
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon.svg">
-  
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -43,11 +40,9 @@
   </nav>
 </div>
 
-<!-- Scripts de bibliotecas com tratamento assíncrono -->
+<!-- Scripts com carregamento seguro -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-<!-- Script Principal -->
 <script src="app.js"></script>
 
 <script>
@@ -55,7 +50,7 @@
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js')
         .then(reg => console.log('Service Worker registrado!'))
-        .catch(err => console.error('Erro no SW:', err));
+        .catch(err => console.error('Erro SW:', err));
     });
   }
 </script>
