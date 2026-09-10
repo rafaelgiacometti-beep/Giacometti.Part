@@ -76,7 +76,7 @@ window.initGoogleAuth = function() {
   }
 };
 
-// --- RENDERIZAÇÃO DA TELA INICIAL (HUB) ---
+// --- TELA SELEÇÃO DE EMPRESAS ---
 function renderCompanySelection() {
   const content = document.getElementById('content');
   const topbarBrand = document.querySelector('.topbar .brand');
@@ -112,7 +112,7 @@ function renderCompanySelection() {
   }
 }
 
-// --- RENDERIZAÇÃO DAS PÁGINAS INTERNAS ---
+// --- RENDERIZAÇÃO DAS PÁGINAS ---
 function renderPage(pageKey) {
   if (!activeCompany) {
     const nav = document.getElementById('bottomNav');
@@ -218,17 +218,14 @@ function renderPage(pageKey) {
     content.innerHTML = `
       <h2>📦 ${is3D ? 'Catálogo RG3D & Filamentos' : 'Gestão de Peptídeos'}</h2>[cite: 1]
 
-      <!-- NOVO FORMULÁRIO: ENTRADA DE STOCK -->
       <div class="card" style="border:1px solid #10b981;">
         <h3>📥 Entrada de Stock (Item Cadastrado)</h3>
         <form id="formEntradaEstoque" style="display:flex; flex-direction:column; gap:8px;">
-          <label style="font-size:0.8rem; color:#6b7280;">Selecione o Item:</label>
           <select id="selectProdutoEntrada" required>
             <option value="">-- Selecione o produto --</option>
             ${db.produtos.map(p => `<option value="${p.id}">${p.nome} (Atual: ${p.stock} un.)</option>`).join('')}
           </select>
-          <label style="font-size:0.8rem; color:#6b7280;">Quantidade a Adicionar:</label>
-          <input type="number" id="qtdEntrada" placeholder="Ex: 5" min="1" required>
+          <input type="number" id="qtdEntrada" placeholder="Quantidade a adicionar" min="1" required>
           <button type="submit" class="btn-submit" style="background:#10b981;">Adicionar ao Stock</button>
         </form>
       </div>
@@ -253,7 +250,7 @@ function renderPage(pageKey) {
           ${db.produtos.map(p => `
             <li style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #e5e7eb;">
               <strong>${p.nome}</strong><br>
-              <span>Stock Atual: <b>${p.stock} un.</b></span> | 
+              <span>Stock: <b>${p.stock} un.</b></span> | 
               <span>Custo: €${Number(p.precoCusto || 0).toFixed(2)}</span> | 
               <span>Venda: €${Number(p.precoVenda || p.preco).toFixed(2)}</span>
             </li>
@@ -262,22 +259,19 @@ function renderPage(pageKey) {
       </div>
     `;
 
-    // Ação: Adicionar ao Stock existente
     document.getElementById('formEntradaEstoque').addEventListener('submit', (e) => {
       e.preventDefault();
       const prodId = parseInt(document.getElementById('selectProdutoEntrada').value);
       const qtdAdd = parseInt(document.getElementById('qtdEntrada').value);
-
       const produto = db.produtos.find(p => p.id === prodId);
       if (produto) {
         produto.stock += qtdAdd;
         saveData(db);
-        alert(`Stock de "${produto.nome}" atualizado! Novo total: ${produto.stock} un.`);
+        alert(`Stock atualizado! Novo total: ${produto.stock} un.`);
         renderPage('produtos');
       }
     });
 
-    // Ação: Cadastrar Novo Produto
     document.getElementById('formProduto').addEventListener('submit', (e) => {
       e.preventDefault();
       const nome = document.getElementById('nomeProduto').value.trim();
@@ -287,7 +281,7 @@ function renderPage(pageKey) {
 
       db.produtos.push({ id: Date.now(), nome, precoCusto, precoVenda, preco: precoVenda, stock });
       saveData(db);
-      alert('Item cadastrado com sucesso!');
+      alert('Item cadastrado!');
       renderPage('produtos');
     });
   }
@@ -324,8 +318,8 @@ function renderPage(pageKey) {
       const qtd = parseInt(document.getElementById('qtdVenda').value);
 
       const produto = db.produtos.find(p => p.id === produtoId);
-      if (!produto) return alert('Selecione um produto válido!');
-      if (produto.stock < qtd) return alert(`Stock insuficiente! Restam apenas ${produto.stock}.`);
+      if (!produto) return alert('Selecione um produto!');
+      if (produto.stock < qtd) return alert(`Stock insuficiente! Restam ${produto.stock}.`);
 
       produto.stock -= qtd;
       const precoVenda = produto.precoVenda || produto.preco;
@@ -336,7 +330,7 @@ function renderPage(pageKey) {
 
       db.vendas.push({ id: Date.now(), data: today, cliente: clienteNome, produto: produto.nome, qtd, total, custoTotal, lucro });
       saveData(db);
-      alert(`Venda efetuada! Lucro: € ${lucro.toFixed(2)}`);
+      alert(`Venda realizada! Lucro: € ${lucro.toFixed(2)}`);
       renderPage('venda');
     });
   }
@@ -346,23 +340,20 @@ function renderPage(pageKey) {
       <h2>⚡ Opções da Empresa</h2>
       <div class="card">
         <h3>☁️ Sincronização em Nuvem</h3>
-        <p style="margin-bottom:12px;">Conectar com Google Drive API para salvamento automático:</p>
         <button onclick="initGoogleAuth()" style="padding:12px; width:100%; background:#4285f4; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Ativar Google Drive</button>
       </div>
 
       <div class="card">
         <h3>🔄 Trocar de Empresa</h3>
-        <p style="margin-bottom:12px;">Voltar ao menu para selecionar a outra empresa:</p>
         <button onclick="trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Trocar Empresa</button>
       </div>
     `;
   }
 }
 
-// --- ARRANQUE DA APLICAÇÃO ---
-function boot() {
+// --- ARRANQUE GARANTIDO ---
+function startApp() {
   const navButtons = document.querySelectorAll('.bottom-nav button');
-
   navButtons.forEach(button => {
     button.addEventListener('click', (e) => {
       e.preventDefault();
@@ -381,8 +372,9 @@ function boot() {
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', boot);
+// Executa imediatamente assim que a página é lida
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  startApp();
 } else {
-  boot();
+  document.addEventListener('DOMContentLoaded', startApp);
 }
