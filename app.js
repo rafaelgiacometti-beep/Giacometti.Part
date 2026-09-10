@@ -4,7 +4,7 @@ let accessToken = null;
 
 // --- ESTADO DA APLICAÇÃO ---
 const today = new Date().toISOString().split('T')[0];
-let currentCompany = localStorage.getItem('selected_company') || null; // 'peptides' ou 'rg3d'[cite: 1]
+let currentCompany = localStorage.getItem('selected_company') || null;
 
 window.mudarAba = function(aba) {
   const btn = document.querySelector(`.bottom-nav button[data-page="${aba}"]`);
@@ -15,14 +15,16 @@ window.mudarAba = function(aba) {
 window.selecionarEmpresa = function(empresa) {
   currentCompany = empresa;
   localStorage.setItem('selected_company', empresa);
-  document.getElementById('bottomNav').style.display = 'flex';
+  const nav = document.getElementById('bottomNav');
+  if (nav) nav.style.display = 'flex';
   renderPage('dashboard');
 };
 
 window.trocarEmpresa = function() {
   currentCompany = null;
   localStorage.removeItem('selected_company');
-  document.getElementById('bottomNav').style.display = 'none';
+  const nav = document.getElementById('bottomNav');
+  if (nav) nav.style.display = 'none';
   renderCompanySelection();
 };
 
@@ -38,7 +40,11 @@ function loadData() {
     localStorage.setItem(key, JSON.stringify(initialData));
     return initialData;
   }
-  return JSON.parse(data);
+  try {
+    return JSON.parse(data);
+  } catch(e) {
+    return { clientes: [], produtos: [], vendas: [] };
+  }
 }
 
 function saveData(data) {
@@ -48,21 +54,28 @@ function saveData(data) {
   }
 }
 
-// --- INTEGRAÇÃO GOOGLE DRIVE API ---
+// --- INTEGRACAO GOOGLE DRIVE API ---
 window.initGoogleAuth = function() {
-  if (typeof google === 'undefined') return;
-  const client = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: 'https://www.googleapis.com/auth/drive.file',
-    callback: (tokenResponse) => {
-      if (tokenResponse.access_token) {
-        accessToken = tokenResponse.access_token;
-        alert('Sincronização com o Google Drive ativada com sucesso!');
-        syncToDrive();
-      }
-    },
-  });
-  client.requestAccessToken();
+  if (typeof google === 'undefined' || !google.accounts) {
+    alert('A biblioteca do Google ainda está a carregar. Tente novamente em alguns segundos.');
+    return;
+  }
+  try {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: (tokenResponse) => {
+        if (tokenResponse.access_token) {
+          accessToken = tokenResponse.access_token;
+          alert('Sincronização com o Google Drive ativada com sucesso!');
+          syncToDrive();
+        }
+      },
+    });
+    client.requestAccessToken();
+  } catch(e) {
+    alert('Erro ao iniciar a autenticação com o Google.');
+  }
 };
 
 async function syncToDrive() {
@@ -72,69 +85,63 @@ async function syncToDrive() {
   const fileContent = JSON.stringify(db, null, 2);
 
   try {
-    const metadata = {
-      name: fileName,
-      mimeType: 'application/json'
-    };
-
+    const metadata = { name: fileName, mimeType: 'application/json' };
     const file = new Blob([fileContent], { type: 'application/json' });
     const formData = new FormData();
     formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     formData.append('file', file);
 
-    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      },
+      headers: { 'Authorization': `Bearer ${accessToken}` },
       body: formData
     });
-
-    if (response.ok) {
-      console.log(`Backup salvo no Google Drive: ${fileName}`);
-    }
   } catch (err) {
-    console.error('Erro ao sincronizar com Google Drive:', err);
+    console.error('Erro na sincronização:', err);
   }
 }
 
-// --- PROCESSADOR DE FICHEIROS STL (RG3D) ---[cite: 1]
+// --- PROCESSADOR DE FICHEIROS STL (RG3D) ---
 function processSTL(file, fillDensity = 0.20) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = function (e) {
-      const buffer = e.target.result;
-      const dataView = new DataView(buffer);
-      const triangles = dataView.getUint32(80, true);
-      let totalVolume = 0;
+      try {
+        const buffer = e.target.result;
+        const dataView = new DataView(buffer);
+        const triangles = dataView.getUint32(80, true);
+        let totalVolume = 0;
 
-      for (let i = 0; i < triangles; i++) {
-        const offset = 84 + i * 50;
-        const v1x = dataView.getFloat32(offset + 12, true);
-        const v1y = dataView.getFloat32(offset + 16, true);
-        const v1z = dataView.getFloat32(offset + 20, true);
+        for (let i = 0; i < triangles; i++) {
+          const offset = 84 + i * 50;
+          const v1x = dataView.getFloat32(offset + 12, true);
+          const v1y = dataView.getFloat32(offset + 16, true);
+          const v1z = dataView.getFloat32(offset + 20, true);
 
-        const v2x = dataView.getFloat32(offset + 24, true);
-        const v2y = dataView.getFloat32(offset + 28, true);
-        const v2z = dataView.getFloat32(offset + 32, true);
+          const v2x = dataView.getFloat32(offset + 24, true);
+          const v2y = dataView.getFloat32(offset + 28, true);
+          const v2z = dataView.getFloat32(offset + 32, true);
 
-        const v3x = dataView.getFloat32(offset + 36, true);
-        const v3y = dataView.getFloat32(offset + 40, true);
-        const v3z = dataView.getFloat32(offset + 44, true);
+          const v3x = dataView.getFloat32(offset + 36, true);
+          const v3y = dataView.getFloat32(offset + 40, true);
+          const v3z = dataView.getFloat32(offset + 44, true);
 
-        const v321 = v3x * v2y * v1z;
-        const v231 = v2x * v3y * v1z;
-        const v312 = v3x * v1y * v2z;
-        const v132 = v1x * v3y * v2z;
-        const v213 = v2x * v1y * v3z;
-        const v123 = v1x * v2y * v3z;
+          const v321 = v3x * v2y * v1z;
+          const v231 = v2x * v3y * v1z;
+          const v312 = v3x * v1y * v2z;
+          const v132 = v1x * v3y * v2z;
+          const v213 = v2x * v1y * v3z;
+          const v123 = v1x * v2y * v3z;
 
-        totalVolume += (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+          totalVolume += (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+        }
+
+        const volumeCm3 = Math.abs(totalVolume) / 1000;
+        const pesoGrams = volumeCm3 * 1.24 * fillDensity;
+        resolve({ volumeCm3, pesoGrams });
+      } catch(err) {
+        reject(err);
       }
-
-      const volumeCm3 = Math.abs(totalVolume) / 1000;
-      const pesoGrams = volumeCm3 * 1.24 * fillDensity; // Densidade aproximada PLA
-      resolve({ volumeCm3, pesoGrams });
     };
     reader.onerror = error => reject(error);
     reader.readAsArrayBuffer(file);
@@ -147,37 +154,40 @@ function renderCompanySelection() {
   const topbarBrand = document.querySelector('.topbar .brand');
   const topbarSub = document.querySelector('.topbar .subtitle');
 
-  topbarBrand.textContent = "⚡ GIACOMETTI HUB";
-  topbarSub.textContent = "Selecione a empresa para gerir";
+  if (topbarBrand) topbarBrand.textContent = "⚡ GIACOMETTI HUB";
+  if (topbarSub) topbarSub.textContent = "Selecione a empresa para gerir";
 
-  content.innerHTML = `
-    <div style="text-align:center; margin-top:10px; margin-bottom:20px;">
-      <h2>Qual empresa deseja gerir hoje?</h2>
-    </div>
-
-    <div class="company-select-container">
-      <div class="company-card peptides" onclick="selecionarEmpresa('peptides')">
-        <div class="company-icon">🧪</div>
-        <div class="company-info">
-          <h3>G. Peptídeos</h3>[cite: 1]
-          <p>Gestão de peptídeos, stock e vendas</p>
-        </div>
+  if (content) {
+    content.innerHTML = `
+      <div style="text-align:center; margin-top:10px; margin-bottom:20px;">
+        <h2>Qual empresa deseja gerir hoje?</h2>
       </div>
 
-      <div class="company-card rg3d" onclick="selecionarEmpresa('rg3d')">
-        <div class="company-icon">🖨️</div>
-        <div class="company-info">
-          <h3>RG3D</h3>[cite: 1]
-          <p>Sua ideia ganha forma.</p>[cite: 1]
+      <div class="company-select-container">
+        <div class="company-card peptides" onclick="selecionarEmpresa('peptides')">
+          <div class="company-icon">🧪</div>
+          <div class="company-info">
+            <h3>G. Peptídeos</h3>[cite: 1]
+            <p>Gestão de peptídeos, stock e vendas</p>
+          </div>
+        </div>
+
+        <div class="company-card rg3d" onclick="selecionarEmpresa('rg3d')">
+          <div class="company-icon">🖨️</div>
+          <div class="company-info">
+            <h3>RG3D</h3>[cite: 1]
+            <p>Sua ideia ganha forma.</p>[cite: 1]
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  }
 }
 
 function renderPage(pageKey) {
   if (!currentCompany) {
-    document.getElementById('bottomNav').style.display = 'none';
+    const nav = document.getElementById('bottomNav');
+    if (nav) nav.style.display = 'none';
     renderCompanySelection();
     return;
   }
@@ -188,12 +198,14 @@ function renderPage(pageKey) {
   const topbarSub = document.querySelector('.topbar .subtitle');
 
   if (currentCompany === 'rg3d') {[cite: 1]
-    topbarBrand.textContent = "🖨️ RG3D";[cite: 1]
-    topbarSub.textContent = "Sua ideia ganha forma.";[cite: 1]
+    if (topbarBrand) topbarBrand.textContent = "🖨️ RG3D";[cite: 1]
+    if (topbarSub) topbarSub.textContent = "Sua ideia ganha forma.";[cite: 1]
   } else {
-    topbarBrand.textContent = "🧪 G. PEPTÍDEOS";[cite: 1]
-    topbarSub.textContent = "Gestão & Controlo Financeiro";
+    if (topbarBrand) topbarBrand.textContent = "🧪 G. PEPTÍDEOS";[cite: 1]
+    if (topbarSub) topbarSub.textContent = "Gestão & Controlo Financeiro";
   }
+
+  if (!content) return;
 
   if (pageKey === 'dashboard') {
     const totalVendas = db.vendas.reduce((acc, v) => acc + (v.total || 0), 0);
@@ -245,7 +257,8 @@ function renderPage(pageKey) {
       </div>
     `;
 
-    document.getElementById('btnNovoPedido').addEventListener('click', () => mudarAba('venda'));
+    const btnNovo = document.getElementById('btnNovoPedido');
+    if (btnNovo) btnNovo.addEventListener('click', () => mudarAba('venda'));
 
     const ultimosDias = [];
     const totaisPorDia = [];
@@ -264,27 +277,30 @@ function renderPage(pageKey) {
     }
 
     if (typeof Chart !== 'undefined') {
-      const ctx = document.getElementById('graficoVendas').getContext('2d');
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ultimosDias,
-          datasets: [{
-            label: 'Vendas (€)',
-            data: totaisPorDia,
-            backgroundColor: currentCompany === 'rg3d' ? '#10b981' : '#3b82f6',[cite: 1]
-            borderRadius: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, grid: { display: false } },
-            x: { grid: { display: false } }
+      const canvas = document.getElementById('graficoVendas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ultimosDias,
+            datasets: [{
+              label: 'Vendas (€)',
+              data: totaisPorDia,
+              backgroundColor: currentCompany === 'rg3d' ? '#10b981' : '#3b82f6',[cite: 1]
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, grid: { display: false } },
+              x: { grid: { display: false } }
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 
@@ -322,7 +338,6 @@ function renderPage(pageKey) {
       <h2>📦 ${is3D ? 'Catálogo RG3D & Filamentos' : 'Gestão de Peptídeos'}</h2>[cite: 1]
 
       ${is3D ? `
-      <!-- CALCULADORA STL PARA RG3D -->[cite: 1]
       <div class="card" style="border:2px solid #10b981;">
         <h3>📐 Calculadora de Custo STL 3D</h3>
         <div style="display:flex; flex-direction:column; gap:8px;">
@@ -384,26 +399,29 @@ function renderPage(pageKey) {
     `;
 
     if (is3D) {[cite: 1]
-      document.getElementById('btnCalcStl').addEventListener('click', async () => {
-        const fileInput = document.getElementById('stlFileInput');
-        if (!fileInput.files.length) return alert('Selecione um ficheiro .stl');
-        const infill = parseFloat(document.getElementById('stlInfill').value) / 100;
-        const filamentCost = parseFloat(document.getElementById('stlFilamentCost').value);
+      const btnStl = document.getElementById('btnCalcStl');
+      if (btnStl) {
+        btnStl.addEventListener('click', async () => {
+          const fileInput = document.getElementById('stlFileInput');
+          if (!fileInput || !fileInput.files.length) return alert('Selecione um ficheiro .stl');
+          const infill = parseFloat(document.getElementById('stlInfill').value) / 100;
+          const filamentCost = parseFloat(document.getElementById('stlFilamentCost').value);
 
-        try {
-          const res = await processSTL(fileInput.files[0], infill);
-          const custoMaterial = (res.pesoGrams / 1000) * filamentCost;
-          const precoSugerido = custoMaterial * 3; // Margem padrão 3x
+          try {
+            const res = await processSTL(fileInput.files[0], infill);
+            const custoMaterial = (res.pesoGrams / 1000) * filamentCost;
+            const precoSugerido = custoMaterial * 3;
 
-          document.getElementById('stlResult').innerHTML = `
-            <p><strong>Peso Estimado:</strong> ${res.pesoGrams.toFixed(2)} g</p>
-            <p><strong>Custo de Material:</strong> € ${custoMaterial.toFixed(2)}</p>
-            <p><strong>Preço Sugerido (3x):</strong> <span style="color:#10b981; font-weight:bold;">€ ${precoSugerido.toFixed(2)}</span></p>
-          `;
-        } catch (e) {
-          alert('Erro ao ler ficheiro STL.');
-        }
-      });
+            document.getElementById('stlResult').innerHTML = `
+              <p><strong>Peso Estimado:</strong> ${res.pesoGrams.toFixed(2)} g</p>
+              <p><strong>Custo de Material:</strong> € ${custoMaterial.toFixed(2)}</p>
+              <p><strong>Preço Sugerido (3x):</strong> <span style="color:#10b981; font-weight:bold;">€ ${precoSugerido.toFixed(2)}</span></p>
+            `;
+          } catch (e) {
+            alert('Erro ao ler ficheiro STL.');
+          }
+        });
+      }
     }
 
     document.getElementById('formProduto').addEventListener('submit', (e) => {
@@ -562,7 +580,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Renderiza a página
   if (currentCompany) {
+    const nav = document.getElementById('bottomNav');
+    if (nav) nav.style.display = 'flex';
     renderPage('dashboard');
   } else {
     renderCompanySelection();
