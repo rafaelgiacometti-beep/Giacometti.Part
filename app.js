@@ -22,7 +22,7 @@ window.trocarEmpresa = function() {
 };
 
 function getDbKey() {
-  return activeCompany === 'rg3d' ? 'rg3d_db' : 'g_peptides_db';[cite: 1]
+  return activeCompany === 'rg3d' ? 'rg3d_db' : 'g_peptides_db';
 }
 
 function loadData() {
@@ -34,7 +34,11 @@ function loadData() {
     return initialData;
   }
   try {
-    return JSON.parse(data);
+    var parsed = JSON.parse(data);
+    if (!parsed.clientes) parsed.clientes = [];
+    if (!parsed.produtos) parsed.produtos = [];
+    if (!parsed.vendas) parsed.vendas = [];
+    return parsed;
   } catch(e) {
     return { clientes: [], produtos: [], vendas: [] };
   }
@@ -60,11 +64,11 @@ function renderCompanySelection() {
       '<div style="display:flex; flex-direction:column; gap:12px; padding:12px;">' +
         '<div onclick="window.selecionarEmpresa(\'peptides\')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer;">' +
           '<div style="font-size:2rem;">🧪</div>' +
-          '<div><h3 style="margin:4px 0;">G. Peptídeos</h3><p style="margin:0; color:#6b7280; font-size:0.85rem;">Gestão de peptídeos, stock e vendas</p></div>' +[cite: 1]
+          '<div><h3 style="margin:4px 0;">G. Peptídeos</h3><p style="margin:0; color:#6b7280; font-size:0.85rem;">Gestão de peptídeos, stock e vendas</p></div>' +
         '</div>' +
-        '<div onclick="window.selecionarEmpresa(\'rg3d\')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #10b981; cursor:pointer;">' +[cite: 1]
+        '<div onclick="window.selecionarEmpresa(\'rg3d\')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #10b981; cursor:pointer;">' +
           '<div style="font-size:2rem;">🖨️</div>' +
-          '<div><h3 style="margin:4px 0;">RG3D</h3><p style="margin:0; color:#6b7280; font-size:0.85rem;">Sua ideia ganha forma.</p></div>' +[cite: 1]
+          '<div><h3 style="margin:4px 0;">RG3D</h3><p style="margin:0; color:#6b7280; font-size:0.85rem;">Sua ideia ganha forma.</p></div>' +
         '</div>' +
       '</div>';
   }
@@ -83,11 +87,11 @@ function renderPage(pageKey) {
   var topbarBrand = document.querySelector('.topbar .brand');
   var topbarSub = document.querySelector('.topbar .subtitle');
 
-  if (activeCompany === 'rg3d') {[cite: 1]
-    if (topbarBrand) topbarBrand.textContent = "🖨️ RG3D";[cite: 1]
-    if (topbarSub) topbarSub.textContent = "Sua ideia ganha forma.";[cite: 1]
+  if (activeCompany === 'rg3d') {
+    if (topbarBrand) topbarBrand.textContent = "🖨️ RG3D";
+    if (topbarSub) topbarSub.textContent = "Sua ideia ganha forma.";
   } else {
-    if (topbarBrand) topbarBrand.textContent = "🧪 G. PEPTÍDEOS";[cite: 1]
+    if (topbarBrand) topbarBrand.textContent = "🧪 G. PEPTÍDEOS";
     if (topbarSub) topbarSub.textContent = "Gestão & Controlo Financeiro";
   }
 
@@ -107,8 +111,8 @@ function renderPage(pageKey) {
 
     content.innerHTML = 
       '<div style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">' +
-        '<h3>' + (activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos') + ' 👋</h3>' +[cite: 1]
-        '<p style="color:#6b7280; font-size:0.9rem;">' + (activeCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo') + '</p>' +[cite: 1]
+        '<h3>' + (activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos') + ' 👋</h3>' +
+        '<p style="color:#6b7280; font-size:0.9rem;">' + (activeCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo') + '</p>' +
       '</div>' +
       '<div style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">' +
         '<h3>📈 Indicadores Financeiros</h3>' +
@@ -140,13 +144,16 @@ function renderPage(pageKey) {
         '</div>' +
       '</div>';
 
-    document.getElementById('formCli').addEventListener('submit', function(e) {
-      e.preventDefault();
-      db.clientes.push({ id: Date.now(), nome: document.getElementById('nCli').value, telefone: document.getElementById('tCli').value });
-      saveData(db);
-      alert('Cliente adicionado!');
-      renderPage('clientes');
-    });
+    var formCli = document.getElementById('formCli');
+    if (formCli) {
+      formCli.addEventListener('submit', function(e) {
+        e.preventDefault();
+        db.clientes.push({ id: Date.now(), nome: document.getElementById('nCli').value, telefone: document.getElementById('tCli').value });
+        saveData(db);
+        alert('Cliente adicionado!');
+        renderPage('clientes');
+      });
+    }
   }
   else if (pageKey === 'produtos') {
     var listaProdHtml = db.produtos.length === 0 ? '<p style="color:#6b7280; margin-top:8px;">Nenhum produto cadastrado.</p>' : '<ul style="margin-top:8px;">';
@@ -173,19 +180,22 @@ function renderPage(pageKey) {
         '</div>' +
       '</div>';
 
-    document.getElementById('formProd').addEventListener('submit', function(e) {
-      e.preventDefault();
-      db.produtos.push({
-        id: Date.now(),
-        nome: document.getElementById('nProd').value,
-        precoCusto: parseFloat(document.getElementById('cProd').value),
-        precoVenda: parseFloat(document.getElementById('vProd').value),
-        stock: parseInt(document.getElementById('sProd').value)
+    var formProd = document.getElementById('formProd');
+    if (formProd) {
+      formProd.addEventListener('submit', function(e) {
+        e.preventDefault();
+        db.produtos.push({
+          id: Date.now(),
+          nome: document.getElementById('nProd').value,
+          precoCusto: parseFloat(document.getElementById('cProd').value),
+          precoVenda: parseFloat(document.getElementById('vProd').value),
+          stock: parseInt(document.getElementById('sProd').value)
+        });
+        saveData(db);
+        alert('Produto cadastrado!');
+        renderPage('produtos');
       });
-      saveData(db);
-      alert('Produto cadastrado!');
-      renderPage('produtos');
-    });
+    }
   }
   else if (pageKey === 'venda') {
     var optCli = '<option value="">-- Selecione o cliente --</option>';
@@ -214,32 +224,35 @@ function renderPage(pageKey) {
         '</div>' +
       '</div>';
 
-    document.getElementById('formVenda').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var cNome = document.getElementById('selCli').value;
-      var pId = parseInt(document.getElementById('selProd').value);
-      var qtd = parseInt(document.getElementById('qVenda').value);
+    var formVenda = document.getElementById('formVenda');
+    if (formVenda) {
+      formVenda.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var cNome = document.getElementById('selCli').value;
+        var pId = parseInt(document.getElementById('selProd').value);
+        var qtd = parseInt(document.getElementById('qVenda').value);
 
-      var prod = null;
-      for (var k = 0; k < db.produtos.length; k++) {
-        if (db.produtos[k].id === pId) {
-          prod = db.produtos[k];
-          break;
+        var prod = null;
+        for (var k = 0; k < db.produtos.length; k++) {
+          if (db.produtos[k].id === pId) {
+            prod = db.produtos[k];
+            break;
+          }
         }
-      }
 
-      if (!prod) return alert('Selecione um produto!');
-      if (prod.stock < qtd) return alert('Stock insuficiente!');
+        if (!prod) return alert('Selecione um produto!');
+        if (prod.stock < qtd) return alert('Stock insuficiente!');
 
-      prod.stock -= qtd;
-      var total = prod.precoVenda * qtd;
-      var custoTotal = prod.precoCusto * qtd;
+        prod.stock -= qtd;
+        var total = prod.precoVenda * qtd;
+        var custoTotal = prod.precoCusto * qtd;
 
-      db.vendas.push({ id: Date.now(), cliente: cNome, produto: prod.nome, qtd: qtd, total: total, custoTotal: custoTotal });
-      saveData(db);
-      alert('Venda registrada com sucesso!');
-      renderPage('dashboard');
-    });
+        db.vendas.push({ id: Date.now(), cliente: cNome, produto: prod.nome, qtd: qtd, total: total, custoTotal: custoTotal });
+        saveData(db);
+        alert('Venda registrada com sucesso!');
+        renderPage('dashboard');
+      });
+    }
   }
   else if (pageKey === 'mais') {
     content.innerHTML = 
