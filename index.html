@@ -2,7 +2,7 @@
 <html lang="pt-PT">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#3b82f6">
   
   <meta name="mobile-web-app-capable" content="yes">
@@ -22,7 +22,7 @@
       <div class="subtitle">Gestão Multiempresa</div>
     </div>
     <div style="display:flex; gap:8px;">
-      <button class="icon-btn" id="driveBtn" onclick="window.initGoogleAuth()" title="Sincronizar Google Drive">☁️</button>
+      <button class="icon-btn" id="driveBtn" title="Sincronizar Google Drive">☁️</button>
       <button class="icon-btn" id="backupBtn" title="Exportar Backup JSON">💾</button>
     </div>
   </header>
@@ -40,9 +40,7 @@
   </nav>
 </div>
 
-<!-- Scripts de Bibliotecas -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Script Principal -->
 <script src="app.js"></script>
 
 <script>

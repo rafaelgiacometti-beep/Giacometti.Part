@@ -53,29 +53,6 @@ function saveData(data) {
   localStorage.setItem(getDbKey(), JSON.stringify(data));
 }
 
-// --- INTEGRAÇÃO GOOGLE DRIVE API ---
-window.initGoogleAuth = function() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    alert('A carregar biblioteca do Google. Aguarde 2 segundos e tente novamente.');
-    return;
-  }
-  try {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/drive.file',
-      callback: (tokenResponse) => {
-        if (tokenResponse.access_token) {
-          accessToken = tokenResponse.access_token;
-          alert('Sincronização com o Google Drive ativada!');
-        }
-      },
-    });
-    client.requestAccessToken();
-  } catch(e) {
-    alert('Erro ao conectar com o Google Drive.');
-  }
-};
-
 // --- TELA SELEÇÃO DE EMPRESAS ---
 function renderCompanySelection() {
   const content = document.getElementById('content');
@@ -91,20 +68,20 @@ function renderCompanySelection() {
         <h2 style="font-size:1.2rem; color:#1f2937;">Qual empresa deseja gerir hoje?</h2>
       </div>
 
-      <div class="company-select-container">
-        <div class="company-card peptides" onclick="selecionarEmpresa('peptides')">
-          <div class="company-icon">🧪</div>
+      <div class="company-select-container" style="display:flex; flex-direction:column; gap:12px; padding:12px;">
+        <div class="company-card peptides" onclick="selecionarEmpresa('peptides')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer;">
+          <div class="company-icon" style="font-size:2rem;">🧪</div>
           <div class="company-info">
-            <h3>G. Peptídeos</h3>[cite: 1]
-            <p>Gestão de peptídeos, stock e vendas</p>
+            <h3 style="margin:4px 0;">G. Peptídeos</h3>
+            <p style="margin:0; color:#6b7280; font-size:0.85rem;">Gestão de peptídeos, stock e vendas</p>
           </div>
         </div>
 
-        <div class="company-card rg3d" onclick="selecionarEmpresa('rg3d')">
-          <div class="company-icon">🖨️</div>
+        <div class="company-card rg3d" onclick="selecionarEmpresa('rg3d')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #10b981; cursor:pointer;">
+          <div class="company-icon" style="font-size:2rem;">🖨️</div>
           <div class="company-info">
-            <h3>RG3D</h3>[cite: 1]
-            <p>Sua ideia ganha forma.</p>[cite: 1]
+            <h3 style="margin:4px 0;">RG3D</h3>[cite: 1]
+            <p style="margin:0; color:#6b7280; font-size:0.85rem;">Sua ideia ganha forma.</p>[cite: 1]
           </div>
         </div>
       </div>
@@ -142,208 +119,22 @@ function renderPage(pageKey) {
     const lucroTotal = totalVendas - totalCusto;
 
     content.innerHTML = `
-      <div class="card-banner" style="background: ${activeCompany === 'rg3d' ? 'var(--gradient-rg3d)' : 'var(--gradient-blue)'}">[cite: 1]
-        <div>
-          <h3>${activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'} 👋</h3>[cite: 1]
-          <p>${activeCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo'}</p>[cite: 1]
-        </div>
-        <div class="avatar">${activeCompany === 'rg3d' ? '🖨️' : '🧪'}</div>[cite: 1]
+      <div class="card" style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">
+        <h3>${activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'} 👋</h3>[cite: 1]
+        <p style="color:#6b7280; font-size:0.9rem;">${activeCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo'}</p>[cite: 1]
       </div>
 
-      <button class="btn-novo-pedido" id="btnNovoPedido">
-        <span>➕</span> REGISTAR NOVA VENDA
-      </button>
-
-      <div class="grid-atalhos">
-        <div class="card-atalho" onclick="mudarAba('venda')">
-          <div class="icon-circle">🛒</div>
-          <span class="label">Vender</span>
-        </div>
-        <div class="card-atalho" onclick="mudarAba('clientes')">
-          <div class="icon-circle">👥</div>
-          <span class="label">Clientes</span>
-        </div>
-        <div class="card-atalho" onclick="mudarAba('produtos')">
-          <div class="icon-circle">📦</div>
-          <span class="label">${activeCompany === 'rg3d' ? 'Modelos/Filamentos' : 'Produtos'}</span>[cite: 1]
-        </div>
-        <div class="card-atalho" onclick="mudarAba('mais')">
-          <div class="icon-circle">⚡</div>
-          <span class="label">Opções</span>
-        </div>
-      </div>
-
-      <div class="card">
+      <div class="card" style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">
         <h3>📈 Indicadores Financeiros</h3>
         <p><strong>Total Faturado:</strong> € ${totalVendas.toFixed(2)}</p>
         <p><strong>Custo Total:</strong> € ${totalCusto.toFixed(2)}</p>
         <p><strong>Lucro Líquido:</strong> <span style="color:#10b981; font-weight:bold;">€ ${lucroTotal.toFixed(2)}</span></p>
       </div>
     `;
-
-    const btnNovo = document.getElementById('btnNovoPedido');
-    if (btnNovo) btnNovo.addEventListener('click', () => mudarAba('venda'));
   }
-
-  else if (pageKey === 'clientes') {
-    content.innerHTML = `
-      <h2>👥 Gestão de Clientes</h2>
-      <div class="card">
-        <h3>➕ Cadastrar Novo Cliente</h3>
-        <form id="formCliente" style="display:flex; flex-direction:column; gap:8px;">
-          <input type="text" id="nomeCliente" placeholder="Nome do cliente" required>
-          <input type="tel" id="telCliente" placeholder="Telefone / Contato" required>
-          <button type="submit" class="btn-submit" style="background:${activeCompany === 'rg3d' ? '#10b981' : '#3b82f6'};">Adicionar Cliente</button>[cite: 1]
-        </form>
-      </div>
-      <div class="card">
-        <h3>📋 Lista de Clientes</h3>
-        ${db.clientes.length === 0 ? '<p>Nenhum cliente cadastrado.</p>' : ''}
-        <ul>
-          ${db.clientes.map(c => `<li><strong>${c.nome}</strong> - ${c.telefone}</li>`).join('')}
-        </ul>
-      </div>
-    `;
-
-    document.getElementById('formCliente').addEventListener('submit', (e) => {
-      e.preventDefault();
-      db.clientes.push({ id: Date.now(), nome: document.getElementById('nomeCliente').value.trim(), telefone: document.getElementById('telCliente').value.trim() });
-      saveData(db);
-      renderPage('clientes');
-    });
-  }
-
-  else if (pageKey === 'produtos') {
-    const is3D = activeCompany === 'rg3d';[cite: 1]
-    content.innerHTML = `
-      <h2>📦 ${is3D ? 'Catálogo RG3D & Filamentos' : 'Gestão de Peptídeos'}</h2>[cite: 1]
-
-      <div class="card" style="border:1px solid #10b981;">
-        <h3>📥 Entrada de Stock (Item Cadastrado)</h3>
-        <form id="formEntradaEstoque" style="display:flex; flex-direction:column; gap:8px;">
-          <select id="selectProdutoEntrada" required>
-            <option value="">-- Selecione o produto --</option>
-            ${db.produtos.map(p => `<option value="${p.id}">${p.nome} (Atual: ${p.stock} un.)</option>`).join('')}
-          </select>
-          <input type="number" id="qtdEntrada" placeholder="Quantidade a adicionar" min="1" required>
-          <button type="submit" class="btn-submit" style="background:#10b981;">Adicionar ao Stock</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h3>➕ ${is3D ? 'Cadastrar Novo Item 3D / Filamento' : 'Cadastrar Novo Item'}</h3>[cite: 1]
-        <form id="formProduto" style="display:flex; flex-direction:column; gap:8px;">
-          <input type="text" id="nomeProduto" placeholder="${is3D ? 'Nome do modelo 3D ou filamento' : 'Nome do produto / peptídeo'}" required>[cite: 1]
-          <div style="display:flex; gap:8px;">
-            <input type="number" step="0.01" id="custoProduto" placeholder="Custo (€)" required>
-            <input type="number" step="0.01" id="vendaProduto" placeholder="Venda (€)" required>
-          </div>
-          <input type="number" id="stockProduto" placeholder="Quantidade Inicial em Stock" required>
-          <button type="submit" class="btn-submit" style="background:${is3D ? '#10b981' : '#3b82f6'};">Cadastrar Item</button>[cite: 1]
-        </form>
-      </div>
-
-      <div class="card">
-        <h3>📋 Catálogo Atual</h3>
-        ${db.produtos.length === 0 ? '<p>Nenhum item cadastrado.</p>' : ''}
-        <ul>
-          ${db.produtos.map(p => `
-            <li style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #e5e7eb;">
-              <strong>${p.nome}</strong><br>
-              <span>Stock: <b>${p.stock} un.</b></span> | 
-              <span>Custo: €${Number(p.precoCusto || 0).toFixed(2)}</span> | 
-              <span>Venda: €${Number(p.precoVenda || p.preco).toFixed(2)}</span>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
-    `;
-
-    document.getElementById('formEntradaEstoque').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const prodId = parseInt(document.getElementById('selectProdutoEntrada').value);
-      const qtdAdd = parseInt(document.getElementById('qtdEntrada').value);
-      const produto = db.produtos.find(p => p.id === prodId);
-      if (produto) {
-        produto.stock += qtdAdd;
-        saveData(db);
-        alert(`Stock atualizado! Novo total: ${produto.stock} un.`);
-        renderPage('produtos');
-      }
-    });
-
-    document.getElementById('formProduto').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const nome = document.getElementById('nomeProduto').value.trim();
-      const precoCusto = parseFloat(document.getElementById('custoProduto').value);
-      const precoVenda = parseFloat(document.getElementById('vendaProduto').value);
-      const stock = parseInt(document.getElementById('stockProduto').value);
-
-      db.produtos.push({ id: Date.now(), nome, precoCusto, precoVenda, preco: precoVenda, stock });
-      saveData(db);
-      alert('Item cadastrado!');
-      renderPage('produtos');
-    });
-  }
-
-  else if (pageKey === 'venda') {
-    content.innerHTML = `
-      <h2>🛒 Registar Venda</h2>
-      <div class="card">
-        <form id="formVenda" style="display:flex; flex-direction:column; gap:10px;">
-          <label>Cliente:</label>
-          <select id="selectCliente" required>
-            <option value="">-- Selecione o cliente --</option>
-            ${db.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('')}
-          </select>
-
-          <label>Produto / Item:</label>
-          <select id="selectProduto" required>
-            <option value="">-- Selecione o produto --</option>
-            ${db.produtos.map(p => `<option value="${p.id}">${p.nome} (€${Number(p.precoVenda || p.preco).toFixed(2)} - Stock: ${p.stock})</option>`).join('')}
-          </select>
-
-          <label>Quantidade:</label>
-          <input type="number" id="qtdVenda" value="1" min="1" required>
-
-          <button type="submit" class="btn-submit" style="background:#10b981;">Finalizar Venda</button>
-        </form>
-      </div>
-    `;
-
-    document.getElementById('formVenda').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const clienteNome = document.getElementById('selectCliente').value;
-      const produtoId = parseInt(document.getElementById('selectProduto').value);
-      const qtd = parseInt(document.getElementById('qtdVenda').value);
-
-      const produto = db.produtos.find(p => p.id === produtoId);
-      if (!produto) return alert('Selecione um produto!');
-      if (produto.stock < qtd) return alert(`Stock insuficiente! Restam ${produto.stock}.`);
-
-      produto.stock -= qtd;
-      const precoVenda = produto.precoVenda || produto.preco;
-      const precoCusto = produto.precoCusto || 0;
-      const total = precoVenda * qtd;
-      const custoTotal = precoCusto * qtd;
-      const lucro = total - custoTotal;
-
-      db.vendas.push({ id: Date.now(), data: today, cliente: clienteNome, produto: produto.nome, qtd, total, custoTotal, lucro });
-      saveData(db);
-      alert(`Venda realizada! Lucro: € ${lucro.toFixed(2)}`);
-      renderPage('venda');
-    });
-  }
-
   else if (pageKey === 'mais') {
     content.innerHTML = `
-      <h2>⚡ Opções da Empresa</h2>
-      <div class="card">
-        <h3>☁️ Sincronização em Nuvem</h3>
-        <button onclick="initGoogleAuth()" style="padding:12px; width:100%; background:#4285f4; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Ativar Google Drive</button>
-      </div>
-
-      <div class="card">
+      <div class="card" style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">
         <h3>🔄 Trocar de Empresa</h3>
         <button onclick="trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Trocar Empresa</button>
       </div>
@@ -351,18 +142,8 @@ function renderPage(pageKey) {
   }
 }
 
-// --- ARRANQUE GARANTIDO ---
-function startApp() {
-  const navButtons = document.querySelectorAll('.bottom-nav button');
-  navButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      navButtons.forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
-      renderPage(button.getAttribute('data-page'));
-    });
-  });
-
+// --- EXECUÇÃO INCONDICIONAL ---
+function init() {
   if (activeCompany) {
     const nav = document.getElementById('bottomNav');
     if (nav) nav.style.display = 'flex';
@@ -372,9 +153,4 @@ function startApp() {
   }
 }
 
-// Executa imediatamente assim que a página é lida
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  startApp();
-} else {
-  document.addEventListener('DOMContentLoaded', startApp);
-}
+init();
