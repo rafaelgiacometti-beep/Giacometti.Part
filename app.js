@@ -1,4 +1,4 @@
-/* jshint esversion: 8 */
+/* jshint esversion: 6 */
 
 // --- CONFIGURAÇÃO GOOGLE DRIVE API ---
 const GOOGLE_CLIENT_ID = "536190457559-qgpncmfg55dm3p4mu60if7akfnaulebs.apps.googleusercontent.com";
@@ -9,9 +9,7 @@ const today = new Date().toISOString().split('T')[0];
 let activeCompany = localStorage.getItem('selected_company') || null;
 
 window.mudarAba = function(aba) {
-  const btn = document.querySelector(`.bottom-nav button[data-page="${aba}"]`);
-  if (btn) btn.click();
-  else renderPage(aba);
+  renderPage(aba);
 };
 
 window.selecionarEmpresa = function(empresa) {
@@ -53,7 +51,30 @@ function saveData(data) {
   localStorage.setItem(getDbKey(), JSON.stringify(data));
 }
 
-// --- TELA SELEÇÃO DE EMPRESAS ---
+// --- INTEGRAÇÃO GOOGLE DRIVE API ---
+window.initGoogleAuth = function() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    alert('A carregar biblioteca do Google. Aguarde 2 segundos e tente novamente.');
+    return;
+  }
+  try {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: (tokenResponse) => {
+        if (tokenResponse.access_token) {
+          accessToken = tokenResponse.access_token;
+          alert('Sincronização com o Google Drive ativada!');
+        }
+      },
+    });
+    client.requestAccessToken();
+  } catch(e) {
+    alert('Erro ao conectar com o Google Drive.');
+  }
+};
+
+// --- RENDERIZAÇÃO DA TELA SELEÇÃO DE EMPRESAS ---
 function renderCompanySelection() {
   const content = document.getElementById('content');
   const topbarBrand = document.querySelector('.topbar .brand');
@@ -69,7 +90,7 @@ function renderCompanySelection() {
       </div>
 
       <div class="company-select-container" style="display:flex; flex-direction:column; gap:12px; padding:12px;">
-        <div class="company-card peptides" onclick="selecionarEmpresa('peptides')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer;">
+        <div class="company-card peptides" onclick="window.selecionarEmpresa('peptides')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer;">
           <div class="company-icon" style="font-size:2rem;">🧪</div>
           <div class="company-info">
             <h3 style="margin:4px 0;">G. Peptídeos</h3>
@@ -77,7 +98,7 @@ function renderCompanySelection() {
           </div>
         </div>
 
-        <div class="company-card rg3d" onclick="selecionarEmpresa('rg3d')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #10b981; cursor:pointer;">
+        <div class="company-card rg3d" onclick="window.selecionarEmpresa('rg3d')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #10b981; cursor:pointer;">
           <div class="company-icon" style="font-size:2rem;">🖨️</div>
           <div class="company-info">
             <h3 style="margin:4px 0;">RG3D</h3>[cite: 1]
@@ -89,7 +110,7 @@ function renderCompanySelection() {
   }
 }
 
-// --- RENDERIZAÇÃO DAS PÁGINAS ---
+// --- RENDERIZAÇÃO DAS DEMAIS PÁGINAS ---
 function renderPage(pageKey) {
   if (!activeCompany) {
     const nav = document.getElementById('bottomNav');
@@ -114,8 +135,15 @@ function renderPage(pageKey) {
   if (!content) return;
 
   if (pageKey === 'dashboard') {
-    const totalVendas = db.vendas.reduce((acc, v) => acc + (v.total || 0), 0);
-    const totalCusto = db.vendas.reduce((acc, v) => acc + (v.custoTotal || 0), 0);
+    let totalVendas = 0;
+    let totalCusto = 0;
+
+    if (db.vendas && db.vendas.length) {
+      db.vendas.forEach(v => {
+        totalVendas += (v.total || 0);
+        totalCusto += (v.custoTotal || 0);
+      });
+    }
     const lucroTotal = totalVendas - totalCusto;
 
     content.innerHTML = `
@@ -131,19 +159,18 @@ function renderPage(pageKey) {
         <p><strong>Lucro Líquido:</strong> <span style="color:#10b981; font-weight:bold;">€ ${lucroTotal.toFixed(2)}</span></p>
       </div>
     `;
-  }
-  else if (pageKey === 'mais') {
+  } else if (pageKey === 'mais') {
     content.innerHTML = `
       <div class="card" style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">
         <h3>🔄 Trocar de Empresa</h3>
-        <button onclick="trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Trocar Empresa</button>
+        <button onclick="window.trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Trocar Empresa</button>
       </div>
     `;
   }
 }
 
-// --- EXECUÇÃO INCONDICIONAL ---
-function init() {
+// --- ARRANQUE AUTOMÁTICO ---
+function initApp() {
   if (activeCompany) {
     const nav = document.getElementById('bottomNav');
     if (nav) nav.style.display = 'flex';
@@ -153,4 +180,8 @@ function init() {
   }
 }
 
-init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
