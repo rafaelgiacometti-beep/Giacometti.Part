@@ -7,14 +7,17 @@
   
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Gestão Multiempresa</title>
+  <title>Giacometti Hub - Gestão Multiempresa</title>
   
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
   
   <link rel="stylesheet" href="style.css">
+  
+  <!-- Scripts Externos: Chart.js e Google Drive API -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -22,10 +25,13 @@
   <!-- Barra Superior -->
   <header class="topbar">
     <div>
-      <div class="brand">⚡ PAINEL MULTIEMPRESA</div>
-      <div class="subtitle">Selecione a empresa para gerir</div>
+      <div class="brand">⚡ GIACOMETTI HUB</div>
+      <div class="subtitle">Gestão Multiempresa</div>
     </div>
-    <button class="icon-btn" id="backupBtn" title="Exportar backup">💾</button>
+    <div style="display:flex; gap:8px;">
+      <button class="icon-btn" id="driveBtn" title="Sincronizar Google Drive">☁️</button>
+      <button class="icon-btn" id="backupBtn" title="Exportar Backup JSON">💾</button>
+    </div>
   </header>
 
   <!-- Conteúdo Dinâmico -->

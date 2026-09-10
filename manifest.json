@@ -1,6 +1,6 @@
 {
-  "name": "Gestão Multiempresa",
-  "short_name": "Gestão App",
+  "name": "Giacometti Hub",
+  "short_name": "Giacometti Hub",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f0f2f5",

@@ -1,6 +1,10 @@
-// 1. Estado da empresa selecionada e utilitários
+// --- CONFIGURAÇÃO GOOGLE DRIVE API ---
+const GOOGLE_CLIENT_ID = "536190457559-qgpncmfg55dm3p4mu60if7akfnaulebs.apps.googleusercontent.com";
+let accessToken = null;
+
+// --- ESTADO DA APLICAÇÃO ---
 const today = new Date().toISOString().split('T')[0];
-let currentCompany = localStorage.getItem('selected_company') || null;
+let currentCompany = localStorage.getItem('selected_company') || null; // 'peptides' ou 'rg3d'[cite: 1]
 
 window.mudarAba = function(aba) {
   const btn = document.querySelector(`.bottom-nav button[data-page="${aba}"]`);
@@ -22,9 +26,8 @@ window.trocarEmpresa = function() {
   renderCompanySelection();
 };
 
-// 2. Persistência de Dados Isolada
 function getDbKey() {
-  return currentCompany === 'rg3d' ? 'rg3d_db' : 'g_peptides_db';
+  return currentCompany === 'rg3d' ? 'rg3d_db' : 'g_peptides_db';[cite: 1]
 }
 
 function loadData() {
@@ -40,15 +43,111 @@ function loadData() {
 
 function saveData(data) {
   localStorage.setItem(getDbKey(), JSON.stringify(data));
+  if (accessToken) {
+    syncToDrive();
+  }
 }
 
-// 3. Tela do Hub de Seleção
+// --- INTEGRAÇÃO GOOGLE DRIVE API ---
+window.initGoogleAuth = function() {
+  if (typeof google === 'undefined') return;
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: (tokenResponse) => {
+      if (tokenResponse.access_token) {
+        accessToken = tokenResponse.access_token;
+        alert('Sincronização com o Google Drive ativada com sucesso!');
+        syncToDrive();
+      }
+    },
+  });
+  client.requestAccessToken();
+};
+
+async function syncToDrive() {
+  if (!accessToken || !currentCompany) return;
+  const db = loadData();
+  const fileName = `${getDbKey()}_backup.json`;
+  const fileContent = JSON.stringify(db, null, 2);
+
+  try {
+    const metadata = {
+      name: fileName,
+      mimeType: 'application/json'
+    };
+
+    const file = new Blob([fileContent], { type: 'application/json' });
+    const formData = new FormData();
+    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    formData.append('file', file);
+
+    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: formData
+    });
+
+    if (response.ok) {
+      console.log(`Backup salvo no Google Drive: ${fileName}`);
+    }
+  } catch (err) {
+    console.error('Erro ao sincronizar com Google Drive:', err);
+  }
+}
+
+// --- PROCESSADOR DE FICHEIROS STL (RG3D) ---[cite: 1]
+function processSTL(file, fillDensity = 0.20) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const buffer = e.target.result;
+      const dataView = new DataView(buffer);
+      const triangles = dataView.getUint32(80, true);
+      let totalVolume = 0;
+
+      for (let i = 0; i < triangles; i++) {
+        const offset = 84 + i * 50;
+        const v1x = dataView.getFloat32(offset + 12, true);
+        const v1y = dataView.getFloat32(offset + 16, true);
+        const v1z = dataView.getFloat32(offset + 20, true);
+
+        const v2x = dataView.getFloat32(offset + 24, true);
+        const v2y = dataView.getFloat32(offset + 28, true);
+        const v2z = dataView.getFloat32(offset + 32, true);
+
+        const v3x = dataView.getFloat32(offset + 36, true);
+        const v3y = dataView.getFloat32(offset + 40, true);
+        const v3z = dataView.getFloat32(offset + 44, true);
+
+        const v321 = v3x * v2y * v1z;
+        const v231 = v2x * v3y * v1z;
+        const v312 = v3x * v1y * v2z;
+        const v132 = v1x * v3y * v2z;
+        const v213 = v2x * v1y * v3z;
+        const v123 = v1x * v2y * v3z;
+
+        totalVolume += (-v321 + v231 + v312 - v132 - v213 + v123) / 6.0;
+      }
+
+      const volumeCm3 = Math.abs(totalVolume) / 1000;
+      const pesoGrams = volumeCm3 * 1.24 * fillDensity; // Densidade aproximada PLA
+      resolve({ volumeCm3, pesoGrams });
+    };
+    reader.onerror = error => reject(error);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// --- RENDERIZAÇÃO DAS PÁGINAS ---
 function renderCompanySelection() {
   const content = document.getElementById('content');
   const topbarBrand = document.querySelector('.topbar .brand');
   const topbarSub = document.querySelector('.topbar .subtitle');
 
-  topbarBrand.textContent = "⚡ PAINEL MULTIEMPRESA";
+  topbarBrand.textContent = "⚡ GIACOMETTI HUB";
   topbarSub.textContent = "Selecione a empresa para gerir";
 
   content.innerHTML = `
@@ -60,7 +159,7 @@ function renderCompanySelection() {
       <div class="company-card peptides" onclick="selecionarEmpresa('peptides')">
         <div class="company-icon">🧪</div>
         <div class="company-info">
-          <h3>G. Peptídeos</h3>
+          <h3>G. Peptídeos</h3>[cite: 1]
           <p>Gestão de peptídeos, stock e vendas</p>
         </div>
       </div>
@@ -68,15 +167,14 @@ function renderCompanySelection() {
       <div class="company-card rg3d" onclick="selecionarEmpresa('rg3d')">
         <div class="company-icon">🖨️</div>
         <div class="company-info">
-          <h3>RG3D</h3>
-          <p>Sua ideia ganha forma.</p>
+          <h3>RG3D</h3>[cite: 1]
+          <p>Sua ideia ganha forma.</p>[cite: 1]
         </div>
       </div>
     </div>
   `;
 }
 
-// 4. Renderização das Páginas da Empresa Ativa
 function renderPage(pageKey) {
   if (!currentCompany) {
     document.getElementById('bottomNav').style.display = 'none';
@@ -89,11 +187,11 @@ function renderPage(pageKey) {
   const topbarBrand = document.querySelector('.topbar .brand');
   const topbarSub = document.querySelector('.topbar .subtitle');
 
-  if (currentCompany === 'rg3d') {
-    topbarBrand.textContent = "🖨️ RG3D";
-    topbarSub.textContent = "Sua ideia ganha forma.";
+  if (currentCompany === 'rg3d') {[cite: 1]
+    topbarBrand.textContent = "🖨️ RG3D";[cite: 1]
+    topbarSub.textContent = "Sua ideia ganha forma.";[cite: 1]
   } else {
-    topbarBrand.textContent = "🧪 G. PEPTÍDEOS";
+    topbarBrand.textContent = "🧪 G. PEPTÍDEOS";[cite: 1]
     topbarSub.textContent = "Gestão & Controlo Financeiro";
   }
 
@@ -103,12 +201,12 @@ function renderPage(pageKey) {
     const lucroTotal = totalVendas - totalCusto;
 
     content.innerHTML = `
-      <div class="card-banner" style="background: ${currentCompany === 'rg3d' ? 'var(--gradient-rg3d)' : 'var(--gradient-blue)'}">
+      <div class="card-banner" style="background: ${currentCompany === 'rg3d' ? 'var(--gradient-rg3d)' : 'var(--gradient-blue)'}">[cite: 1]
         <div>
-          <h3>${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'} 👋</h3>
-          <p>${currentCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo'}</p>
+          <h3>${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'} 👋</h3>[cite: 1]
+          <p>${currentCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo'}</p>[cite: 1]
         </div>
-        <div class="avatar">${currentCompany === 'rg3d' ? '🖨️' : '🧪'}</div>
+        <div class="avatar">${currentCompany === 'rg3d' ? '🖨️' : '🧪'}</div>[cite: 1]
       </div>
 
       <button class="btn-novo-pedido" id="btnNovoPedido">
@@ -126,7 +224,7 @@ function renderPage(pageKey) {
         </div>
         <div class="card-atalho" onclick="mudarAba('produtos')">
           <div class="icon-circle">📦</div>
-          <span class="label">${currentCompany === 'rg3d' ? 'Modelos/Filamentos' : 'Produtos'}</span>
+          <span class="label">${currentCompany === 'rg3d' ? 'Modelos/Filamentos' : 'Produtos'}</span>[cite: 1]
         </div>
         <div class="card-atalho" onclick="mudarAba('mais')">
           <div class="icon-circle">⚡</div>
@@ -174,7 +272,7 @@ function renderPage(pageKey) {
           datasets: [{
             label: 'Vendas (€)',
             data: totaisPorDia,
-            backgroundColor: currentCompany === 'rg3d' ? '#10b981' : '#3b82f6',
+            backgroundColor: currentCompany === 'rg3d' ? '#10b981' : '#3b82f6',[cite: 1]
             borderRadius: 8
           }]
         },
@@ -198,7 +296,7 @@ function renderPage(pageKey) {
         <form id="formCliente" style="display:flex; flex-direction:column; gap:8px;">
           <input type="text" id="nomeCliente" placeholder="Nome do cliente" required>
           <input type="tel" id="telCliente" placeholder="Telefone / Contato" required>
-          <button type="submit" class="btn-submit" style="background:${currentCompany === 'rg3d' ? '#10b981' : '#3b82f6'};">Adicionar Cliente</button>
+          <button type="submit" class="btn-submit" style="background:${currentCompany === 'rg3d' ? '#10b981' : '#3b82f6'};">Adicionar Cliente</button>[cite: 1]
         </form>
       </div>
       <div class="card">
@@ -219,20 +317,37 @@ function renderPage(pageKey) {
   }
 
   else if (pageKey === 'produtos') {
-    const is3D = currentCompany === 'rg3d';
+    const is3D = currentCompany === 'rg3d';[cite: 1]
     content.innerHTML = `
-      <h2>📦 ${is3D ? 'Catálogo RG3D & Filamentos' : 'Gestão de Peptídeos'}</h2>
+      <h2>📦 ${is3D ? 'Catálogo RG3D & Filamentos' : 'Gestão de Peptídeos'}</h2>[cite: 1]
+
+      ${is3D ? `
+      <!-- CALCULADORA STL PARA RG3D -->[cite: 1]
+      <div class="card" style="border:2px solid #10b981;">
+        <h3>📐 Calculadora de Custo STL 3D</h3>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <label>Ficheiro STL:</label>
+          <input type="file" id="stlFileInput" accept=".stl">
+          <label>Preenchimento (Infill %):</label>
+          <input type="number" id="stlInfill" value="20" min="5" max="100">
+          <label>Preço do Rolo de Filamento (€/kg):</label>
+          <input type="number" id="stlFilamentCost" value="20.00" step="0.01">
+          <button id="btnCalcStl" class="btn-submit" style="background:#10b981;">Calcular Custo da Peça</button>
+          <div id="stlResult" style="margin-top:10px; font-size:0.9rem;"></div>
+        </div>
+      </div>
+      ` : ''}
 
       <div class="card">
-        <h3>➕ ${is3D ? 'Cadastrar Item 3D / Filamento' : 'Cadastrar Novo Item'}</h3>
+        <h3>➕ ${is3D ? 'Cadastrar Item 3D / Filamento' : 'Cadastrar Novo Item'}</h3>[cite: 1]
         <form id="formProduto" style="display:flex; flex-direction:column; gap:8px;">
-          <input type="text" id="nomeProduto" placeholder="${is3D ? 'Nome do modelo 3D ou filamento' : 'Nome do produto / peptídeo'}" required>
+          <input type="text" id="nomeProduto" placeholder="${is3D ? 'Nome do modelo 3D ou filamento' : 'Nome do produto / peptídeo'}" required>[cite: 1]
           <div style="display:flex; gap:8px;">
             <input type="number" step="0.01" id="custoProduto" placeholder="Custo (€)" required>
             <input type="number" step="0.01" id="vendaProduto" placeholder="Venda (€)" required>
           </div>
           <input type="number" id="stockProduto" placeholder="Quantidade em Stock" required>
-          <button type="submit" class="btn-submit" style="background:${is3D ? '#10b981' : '#3b82f6'};">Cadastrar Item</button>
+          <button type="submit" class="btn-submit" style="background:${is3D ? '#10b981' : '#3b82f6'};">Cadastrar Item</button>[cite: 1]
         </form>
       </div>
 
@@ -267,6 +382,29 @@ function renderPage(pageKey) {
         </ul>
       </div>
     `;
+
+    if (is3D) {[cite: 1]
+      document.getElementById('btnCalcStl').addEventListener('click', async () => {
+        const fileInput = document.getElementById('stlFileInput');
+        if (!fileInput.files.length) return alert('Selecione um ficheiro .stl');
+        const infill = parseFloat(document.getElementById('stlInfill').value) / 100;
+        const filamentCost = parseFloat(document.getElementById('stlFilamentCost').value);
+
+        try {
+          const res = await processSTL(fileInput.files[0], infill);
+          const custoMaterial = (res.pesoGrams / 1000) * filamentCost;
+          const precoSugerido = custoMaterial * 3; // Margem padrão 3x
+
+          document.getElementById('stlResult').innerHTML = `
+            <p><strong>Peso Estimado:</strong> ${res.pesoGrams.toFixed(2)} g</p>
+            <p><strong>Custo de Material:</strong> € ${custoMaterial.toFixed(2)}</p>
+            <p><strong>Preço Sugerido (3x):</strong> <span style="color:#10b981; font-weight:bold;">€ ${precoSugerido.toFixed(2)}</span></p>
+          `;
+        } catch (e) {
+          alert('Erro ao ler ficheiro STL.');
+        }
+      });
+    }
 
     document.getElementById('formProduto').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -362,20 +500,26 @@ function renderPage(pageKey) {
     content.innerHTML = `
       <h2>⚡ Opções da Empresa</h2>
       <div class="card">
+        <h3>☁️ Sincronização em Nuvem</h3>
+        <p style="margin-bottom:12px;">Conectar com Google Drive API para salvamento automático:</p>
+        <button onclick="initGoogleAuth()" style="padding:12px; width:100%; background:#4285f4; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Ativar Google Drive</button>
+      </div>
+
+      <div class="card">
         <h3>🔄 Trocar de Empresa</h3>
         <p style="margin-bottom:12px;">Voltar ao menu para selecionar a outra empresa:</p>
         <button onclick="trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Trocar Empresa</button>
       </div>
 
       <div class="card">
-        <h3>⚠️ Gerenciamento de Dados (${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'})</h3>
+        <h3>⚠️ Gerenciamento de Dados (${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'})</h3>[cite: 1]
         <p style="margin-bottom:12px;">Apaga os dados apenas da empresa atual:</p>
         <button id="resetDataBtn" style="padding:12px; width:100%; background:#ef4444; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Apagar Dados desta Empresa</button>
       </div>
     `;
 
     document.getElementById('resetDataBtn').addEventListener('click', () => {
-      if (confirm(`Deseja apagar todos os dados de ${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'}?`)) {
+      if (confirm(`Deseja apagar todos os dados de ${currentCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'}?`)) {[cite: 1]
         localStorage.removeItem(getDbKey());
         location.reload();
       }
@@ -383,10 +527,11 @@ function renderPage(pageKey) {
   }
 }
 
-// 5. Inicialização
+// --- INICIALIZAÇÃO ---
 document.addEventListener('DOMContentLoaded', () => {
   const navButtons = document.querySelectorAll('.bottom-nav button');
   const backupBtn = document.getElementById('backupBtn');
+  const driveBtn = document.getElementById('driveBtn');
 
   navButtons.forEach(button => {
     button.addEventListener('click', (e) => {
@@ -408,6 +553,12 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+    });
+  }
+
+  if (driveBtn) {
+    driveBtn.addEventListener('click', () => {
+      initGoogleAuth();
     });
   }
 
