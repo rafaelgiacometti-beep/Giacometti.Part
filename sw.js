@@ -1,4 +1,4 @@
-const CACHE_NAME = 'giacometti-hub-v4';
+const CACHE_NAME = 'giacometti-hub-v5';
 const ASSETS = [
   './',
   './index.html',
