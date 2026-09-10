@@ -40,17 +40,13 @@
   </nav>
 </div>
 
-<!-- Scripts com carregamento seguro -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Script Principal carregado com segurança -->
 <script src="app.js"></script>
 
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('Service Worker registrado!'))
-        .catch(err => console.error('Erro SW:', err));
+      navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
 </script>
