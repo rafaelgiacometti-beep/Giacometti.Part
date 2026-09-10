@@ -1,11 +1,10 @@
-const CACHE_NAME = 'giacometti-hub-v1';
+const CACHE_NAME = 'giacometti-hub-v2'; // Alterado para v2
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
-  './manifest.json',
-  './icon.svg'
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
