@@ -1,21 +1,14 @@
 /* jshint esversion: 6 */
 
-// --- CONFIGURAÇÃO GOOGLE DRIVE API ---
-const GOOGLE_CLIENT_ID = "536190457559-qgpncmfg55dm3p4mu60if7akfnaulebs.apps.googleusercontent.com";
-let accessToken = null;
+var GOOGLE_CLIENT_ID = "536190457559-qgpncmfg55dm3p4mu60if7akfnaulebs.apps.googleusercontent.com";
+var accessToken = null;
 
-// --- ESTADO DA APLICAÇÃO ---
-const today = new Date().toISOString().split('T')[0];
-let activeCompany = localStorage.getItem('selected_company') || null;
-
-window.mudarAba = function(aba) {
-  renderPage(aba);
-};
+var activeCompany = localStorage.getItem('selected_company') || null;
 
 window.selecionarEmpresa = function(empresa) {
   activeCompany = empresa;
   localStorage.setItem('selected_company', empresa);
-  const nav = document.getElementById('bottomNav');
+  var nav = document.getElementById('bottomNav');
   if (nav) nav.style.display = 'flex';
   renderPage('dashboard');
 };
@@ -23,20 +16,20 @@ window.selecionarEmpresa = function(empresa) {
 window.trocarEmpresa = function() {
   activeCompany = null;
   localStorage.removeItem('selected_company');
-  const nav = document.getElementById('bottomNav');
+  var nav = document.getElementById('bottomNav');
   if (nav) nav.style.display = 'none';
   renderCompanySelection();
 };
 
 function getDbKey() {
-  return activeCompany === 'rg3d' ? 'rg3d_db' : 'g_peptides_db';[cite: 1]
+  return activeCompany === 'rg3d' ? 'rg3d_db' : 'g_peptides_db';
 }
 
 function loadData() {
-  const key = getDbKey();
-  const data = localStorage.getItem(key);
+  var key = getDbKey();
+  var data = localStorage.getItem(key);
   if (!data) {
-    const initialData = { clientes: [], produtos: [], vendas: [] };
+    var initialData = { clientes: [], produtos: [], vendas: [] };
     localStorage.setItem(key, JSON.stringify(initialData));
     return initialData;
   }
@@ -51,22 +44,21 @@ function saveData(data) {
   localStorage.setItem(getDbKey(), JSON.stringify(data));
 }
 
-// --- INTEGRAÇÃO GOOGLE DRIVE API ---
 window.initGoogleAuth = function() {
   if (typeof google === 'undefined' || !google.accounts) {
     alert('A carregar biblioteca do Google. Aguarde 2 segundos e tente novamente.');
     return;
   }
   try {
-    const client = google.accounts.oauth2.initTokenClient({
+    var client = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: 'https://www.googleapis.com/auth/drive.file',
-      callback: (tokenResponse) => {
+      callback: function(tokenResponse) {
         if (tokenResponse.access_token) {
           accessToken = tokenResponse.access_token;
           alert('Sincronização com o Google Drive ativada!');
         }
-      },
+      }
     });
     client.requestAccessToken();
   } catch(e) {
@@ -74,105 +66,90 @@ window.initGoogleAuth = function() {
   }
 };
 
-// --- RENDERIZAÇÃO DA TELA SELEÇÃO DE EMPRESAS ---
 function renderCompanySelection() {
-  const content = document.getElementById('content');
-  const topbarBrand = document.querySelector('.topbar .brand');
-  const topbarSub = document.querySelector('.topbar .subtitle');
+  var content = document.getElementById('content');
+  var topbarBrand = document.querySelector('.topbar .brand');
+  var topbarSub = document.querySelector('.topbar .subtitle');
 
   if (topbarBrand) topbarBrand.textContent = "⚡ GIACOMETTI HUB";
   if (topbarSub) topbarSub.textContent = "Selecione a empresa para gerir";
 
   if (content) {
-    content.innerHTML = `
-      <div style="text-align:center; margin-top:20px; margin-bottom:20px;">
-        <h2 style="font-size:1.2rem; color:#1f2937;">Qual empresa deseja gerir hoje?</h2>
-      </div>
-
-      <div class="company-select-container" style="display:flex; flex-direction:column; gap:12px; padding:12px;">
-        <div class="company-card peptides" onclick="window.selecionarEmpresa('peptides')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer;">
-          <div class="company-icon" style="font-size:2rem;">🧪</div>
-          <div class="company-info">
-            <h3 style="margin:4px 0;">G. Peptídeos</h3>
-            <p style="margin:0; color:#6b7280; font-size:0.85rem;">Gestão de peptídeos, stock e vendas</p>
-          </div>
-        </div>
-
-        <div class="company-card rg3d" onclick="window.selecionarEmpresa('rg3d')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #10b981; cursor:pointer;">
-          <div class="company-icon" style="font-size:2rem;">🖨️</div>
-          <div class="company-info">
-            <h3 style="margin:4px 0;">RG3D</h3>[cite: 1]
-            <p style="margin:0; color:#6b7280; font-size:0.85rem;">Sua ideia ganha forma.</p>[cite: 1]
-          </div>
-        </div>
-      </div>
-    `;
+    content.innerHTML = 
+      '<div style="text-align:center; margin-top:20px; margin-bottom:20px;">' +
+        '<h2 style="font-size:1.2rem; color:#1f2937;">Qual empresa deseja gerir hoje?</h2>' +
+      '</div>' +
+      '<div style="display:flex; flex-direction:column; gap:12px; padding:12px;">' +
+        '<div onclick="window.selecionarEmpresa(\'peptides\')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer;">' +
+          '<div style="font-size:2rem;">🧪</div>' +
+          '<div><h3 style="margin:4px 0;">G. Peptídeos</h3><p style="margin:0; color:#6b7280; font-size:0.85rem;">Gestão de peptídeos, stock e vendas</p></div>' +
+        '</div>' +
+        '<div onclick="window.selecionarEmpresa(\'rg3d\')" style="padding:16px; background:#fff; border-radius:12px; border:1px solid #10b981; cursor:pointer;">' +
+          '<div style="font-size:2rem;">🖨️</div>' +
+          '<div><h3 style="margin:4px 0;">RG3D</h3><p style="margin:0; color:#6b7280; font-size:0.85rem;">Sua ideia ganha forma.</p></div>' +
+        '</div>' +
+      '</div>';
   }
 }
 
-// --- RENDERIZAÇÃO DAS DEMAIS PÁGINAS ---
 function renderPage(pageKey) {
   if (!activeCompany) {
-    const nav = document.getElementById('bottomNav');
+    var nav = document.getElementById('bottomNav');
     if (nav) nav.style.display = 'none';
     renderCompanySelection();
     return;
   }
 
-  const db = loadData();
-  const content = document.getElementById('content');
-  const topbarBrand = document.querySelector('.topbar .brand');
-  const topbarSub = document.querySelector('.topbar .subtitle');
+  var db = loadData();
+  var content = document.getElementById('content');
+  var topbarBrand = document.querySelector('.topbar .brand');
+  var topbarSub = document.querySelector('.topbar .subtitle');
 
-  if (activeCompany === 'rg3d') {[cite: 1]
-    if (topbarBrand) topbarBrand.textContent = "🖨️ RG3D";[cite: 1]
-    if (topbarSub) topbarSub.textContent = "Sua ideia ganha forma.";[cite: 1]
+  if (activeCompany === 'rg3d') {
+    if (topbarBrand) topbarBrand.textContent = "🖨️ RG3D";
+    if (topbarSub) topbarSub.textContent = "Sua ideia ganha forma.";
   } else {
-    if (topbarBrand) topbarBrand.textContent = "🧪 G. PEPTÍDEOS";[cite: 1]
+    if (topbarBrand) topbarBrand.textContent = "🧪 G. PEPTÍDEOS";
     if (topbarSub) topbarSub.textContent = "Gestão & Controlo Financeiro";
   }
 
   if (!content) return;
 
   if (pageKey === 'dashboard') {
-    let totalVendas = 0;
-    let totalCusto = 0;
+    var totalVendas = 0;
+    var totalCusto = 0;
 
     if (db.vendas && db.vendas.length) {
-      db.vendas.forEach(v => {
-        totalVendas += (v.total || 0);
-        totalCusto += (v.custoTotal || 0);
-      });
+      for (var i = 0; i < db.vendas.length; i++) {
+        totalVendas += (db.vendas[i].total || 0);
+        totalCusto += (db.vendas[i].custoTotal || 0);
+      }
     }
-    const lucroTotal = totalVendas - totalCusto;
+    var lucroTotal = totalVendas - totalCusto;
 
-    content.innerHTML = `
-      <div class="card" style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">
-        <h3>${activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos'} 👋</h3>[cite: 1]
-        <p style="color:#6b7280; font-size:0.9rem;">${activeCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo'}</p>[cite: 1]
-      </div>
-
-      <div class="card" style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">
-        <h3>📈 Indicadores Financeiros</h3>
-        <p><strong>Total Faturado:</strong> € ${totalVendas.toFixed(2)}</p>
-        <p><strong>Custo Total:</strong> € ${totalCusto.toFixed(2)}</p>
-        <p><strong>Lucro Líquido:</strong> <span style="color:#10b981; font-weight:bold;">€ ${lucroTotal.toFixed(2)}</span></p>
-      </div>
-    `;
+    content.innerHTML = 
+      '<div style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">' +
+        '<h3>' + (activeCompany === 'rg3d' ? 'RG3D' : 'G. Peptídeos') + ' 👋</h3>' +
+        '<p style="color:#6b7280; font-size:0.9rem;">' + (activeCompany === 'rg3d' ? 'Sua ideia ganha forma.' : 'Painel de controlo ativo') + '</p>' +
+      '</div>' +
+      '<div style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">' +
+        '<h3>📈 Indicadores Financeiros</h3>' +
+        '<p><strong>Total Faturado:</strong> € ' + totalVendas.toFixed(2) + '</p>' +
+        '<p><strong>Custo Total:</strong> € ' + totalCusto.toFixed(2) + '</p>' +
+        '<p><strong>Lucro Líquido:</strong> <span style="color:#10b981; font-weight:bold;">€ ' + lucroTotal.toFixed(2) + '</span></p>' +
+      '</div>';
   } else if (pageKey === 'mais') {
-    content.innerHTML = `
-      <div class="card" style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">
-        <h3>🔄 Trocar de Empresa</h3>
-        <button onclick="window.trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Trocar Empresa</button>
-      </div>
-    `;
+    content.innerHTML = 
+      '<div style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">' +
+        '<h3>🔄 Trocar de Empresa</h3>' +
+        '<button onclick="window.trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Trocar Empresa</button>' +
+      '</div>';
   }
 }
 
-// --- ARRANQUE AUTOMÁTICO ---
-function initApp() {
+function startApp() {
   if (activeCompany) {
-    const nav = document.getElementById('bottomNav');
+    var nav = document.getElementById('bottomNav');
     if (nav) nav.style.display = 'flex';
     renderPage('dashboard');
   } else {
@@ -180,8 +157,8 @@ function initApp() {
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  startApp();
 } else {
-  initApp();
+  document.addEventListener('DOMContentLoaded', startApp);
 }

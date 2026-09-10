@@ -15,22 +15,19 @@
 <body>
 
 <div id="app">
-  <!-- Barra Superior -->
   <header class="topbar">
     <div>
       <div class="brand">⚡ GIACOMETTI HUB</div>
       <div class="subtitle">Gestão Multiempresa</div>
     </div>
     <div style="display:flex; gap:8px;">
-      <button class="icon-btn" id="driveBtn" title="Sincronizar Google Drive">☁️</button>
+      <button class="icon-btn" id="driveBtn" onclick="window.initGoogleAuth()" title="Sincronizar Google Drive">☁️</button>
       <button class="icon-btn" id="backupBtn" title="Exportar Backup JSON">💾</button>
     </div>
   </header>
 
-  <!-- Conteúdo Dinâmico -->
   <main id="content"></main>
 
-  <!-- Navegação Inferior -->
   <nav class="bottom-nav" id="bottomNav" style="display:none;">
     <button data-page="dashboard" class="active">🏠<span>Início</span></button>
     <button data-page="clientes">👥<span>Clientes</span></button>
@@ -40,7 +37,7 @@
   </nav>
 </div>
 
-<!-- Script Principal -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="app.js"></script>
 
 <script>
