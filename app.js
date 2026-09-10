@@ -44,28 +44,6 @@ function saveData(data) {
   localStorage.setItem(getDbKey(), JSON.stringify(data));
 }
 
-window.initGoogleAuth = function() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    alert('A carregar biblioteca do Google. Aguarde 2 segundos e tente novamente.');
-    return;
-  }
-  try {
-    var client = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/drive.file',
-      callback: function(tokenResponse) {
-        if (tokenResponse.access_token) {
-          accessToken = tokenResponse.access_token;
-          alert('Sincronização com o Google Drive ativada!');
-        }
-      }
-    });
-    client.requestAccessToken();
-  } catch(e) {
-    alert('Erro ao conectar com o Google Drive.');
-  }
-};
-
 function renderCompanySelection() {
   var content = document.getElementById('content');
   var topbarBrand = document.querySelector('.topbar .brand');
@@ -138,16 +116,93 @@ function renderPage(pageKey) {
         '<p><strong>Custo Total:</strong> € ' + totalCusto.toFixed(2) + '</p>' +
         '<p><strong>Lucro Líquido:</strong> <span style="color:#10b981; font-weight:bold;">€ ' + lucroTotal.toFixed(2) + '</span></p>' +
       '</div>';
-  } else if (pageKey === 'mais') {
+  } 
+  else if (pageKey === 'clientes') {
     content.innerHTML = 
-      '<div style="padding:16px; background:#fff; border-radius:12px; margin:12px; border:1px solid #e5e7eb;">' +
-        '<h3>🔄 Trocar de Empresa</h3>' +
-        '<button onclick="window.trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">Trocar Empresa</button>' +
+      '<div style="padding:16px;">' +
+        '<h2>👥 Clientes</h2>' +
+        '<div style="background:#fff; padding:12px; border-radius:12px; margin-top:12px;">' +
+          '<h3>➕ Cadastrar Cliente</h3>' +
+          '<form id="formCli" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">' +
+            '<input type="text" id="nCli" placeholder="Nome" required style="padding:8px; border:1px solid #ccc; border-radius:6px;">' +
+            '<input type="tel" id="tCli" placeholder="Telefone" required style="padding:8px; border:1px solid #ccc; border-radius:6px;">' +
+            '<button type="submit" style="padding:10px; background:#3b82f6; color:#fff; border:none; border-radius:6px; font-weight:bold;">Salvar</button>' +
+          '</form>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('formCli').addEventListener('submit', function(e) {
+      e.preventDefault();
+      db.clientes.push({ id: Date.now(), nome: document.getElementById('nCli').value, telefone: document.getElementById('tCli').value });
+      saveData(db);
+      alert('Cliente adicionado!');
+      renderPage('clientes');
+    });
+  }
+  else if (pageKey === 'produtos') {
+    content.innerHTML = 
+      '<div style="padding:16px;">' +
+        '<h2>📦 Produtos</h2>' +
+        '<div style="background:#fff; padding:12px; border-radius:12px; margin-top:12px;">' +
+          '<h3>➕ Cadastrar Item</h3>' +
+          '<form id="formProd" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">' +
+            '<input type="text" id="nProd" placeholder="Nome do produto" required style="padding:8px; border:1px solid #ccc; border-radius:6px;">' +
+            '<input type="number" step="0.01" id="cProd" placeholder="Custo (€)" required style="padding:8px; border:1px solid #ccc; border-radius:6px;">' +
+            '<input type="number" step="0.01" id="vProd" placeholder="Venda (€)" required style="padding:8px; border:1px solid #ccc; border-radius:6px;">' +
+            '<input type="number" id="sProd" placeholder="Quantidade Stock" required style="padding:8px; border:1px solid #ccc; border-radius:6px;">' +
+            '<button type="submit" style="padding:10px; background:#3b82f6; color:#fff; border:none; border-radius:6px; font-weight:bold;">Salvar Produto</button>' +
+          '</form>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('formProd').addEventListener('submit', function(e) {
+      e.preventDefault();
+      db.produtos.push({
+        id: Date.now(),
+        nome: document.getElementById('nProd').value,
+        precoCusto: parseFloat(document.getElementById('cProd').value),
+        precoVenda: parseFloat(document.getElementById('vProd').value),
+        stock: parseInt(document.getElementById('sProd').value)
+      });
+      saveData(db);
+      alert('Produto cadastrado!');
+      renderPage('produtos');
+    });
+  }
+  else if (pageKey === 'venda') {
+    content.innerHTML = 
+      '<div style="padding:16px;">' +
+        '<h2>🛒 Vender</h2>' +
+        '<p style="color:#6b7280; margin-top:8px;">Selecione os itens cadastrados em Clientes e Produtos para registrar.</p>' +
+      '</div>';
+  }
+  else if (pageKey === 'mais') {
+    content.innerHTML = 
+      '<div style="padding:16px;">' +
+        '<div style="padding:16px; background:#fff; border-radius:12px; border:1px solid #e5e7eb;">' +
+          '<h3>🔄 Trocar de Empresa</h3>' +
+          '<button onclick="window.trocarEmpresa()" style="padding:12px; width:100%; background:#3b82f6; color:#fff; border:none; border-radius:12px; cursor:pointer; font-weight:bold; margin-top:8px;">Trocar Empresa</button>' +
+        '</div>' +
       '</div>';
   }
 }
 
+// Vincula os cliques dos botões da barra inferior
+function bindNavEvents() {
+  var navButtons = document.querySelectorAll('.bottom-nav button');
+  navButtons.forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var page = btn.getAttribute('data-page');
+      navButtons.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderPage(page);
+    });
+  });
+}
+
 function startApp() {
+  bindNavEvents();
   if (activeCompany) {
     var nav = document.getElementById('bottomNav');
     if (nav) nav.style.display = 'flex';
