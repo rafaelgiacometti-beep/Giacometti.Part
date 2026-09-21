@@ -8,7 +8,9 @@ function loadDb() {
     localStorage.setItem('rg3d_db', JSON.stringify(initial));
     return initial;
   }
-  return JSON.parse(data);
+  const db = JSON.parse(data);
+  if (!db.orcamentos) db.orcamentos = [];
+  return db;
 }
 
 function saveDb(data) {
@@ -43,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function renderPage(page) {
+function renderPage(page, extraData = null) {
   const db = loadDb();
   const content = document.getElementById('content');
 
@@ -55,6 +57,7 @@ function renderPage(page) {
         <h3>📊 RESUMO FINANCEIRO & VENDAS</h3>
         <p><strong>Faturamento Total:</strong> € ${faturamento.toFixed(2)}</p>
         <p><strong>Pedidos Registados:</strong> ${db.pedidos.length}</p>
+        <p><strong>Orçamentos Guardados:</strong> ${db.orcamentos.length}</p>
         <p><strong>Clientes Cadastrados:</strong> ${db.clientes.length}</p>
         <p><strong>Materiais em Stock:</strong> ${db.materiais.length} itens</p>
       </div>
@@ -87,6 +90,10 @@ function renderPage(page) {
     content.innerHTML = `
       <h2>🧮 CALCULADORA DE ORÇAMENTO 3D</h2>
       <div class="card">
+        <h3>➕ Criar Orçamento</h3>
+        <label>Nome da Pessoa / Cliente</label>
+        <input type="text" id="orcCliente" placeholder="Ex: Maria Santos">
+
         <label>Nome da Peça / Projeto</label>
         <input type="text" id="orcPeca" placeholder="Ex: Suporte Fone">
         
@@ -110,23 +117,44 @@ function renderPage(page) {
           <p>Custo Máquina: <strong id="resCustoMaq">€ 0.00</strong></p>
           <p style="font-size:1.1rem; color:#00C2CC; margin-top:6px;">Preço Sugerido: <strong id="resPrecoFinal" style="color:#00C2CC;">€ 0.00</strong></p>
         </div>
+
+        <button class="btn-cyan" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
+      </div>
+
+      <div class="card">
+        <h3>📋 Orçamentos Guardados</h3>
+        <ul>
+          ${db.orcamentos.map(o => `
+            <li style="display:flex; flex-direction:column; gap:6px; padding:10px 0; border-bottom:1px solid #2D3238;">
+              <div><strong>Pessoa:</strong> ${o.clienteName}</div>
+              <div><strong>Peça:</strong> ${o.peca} - <b style="color:#00C2CC;">€ ${parseFloat(o.precoFinal).toFixed(2)}</b></div>
+              <small style="color:#A7ADB3;">Data: ${o.data}</small>
+              <button class="btn-cyan" style="margin-top:6px; padding:8px; font-size:0.8rem;" onclick="converterOrcamentoEmVenda(${o.id})">🛒 Virar Venda / Pedido</button>
+            </li>
+          `).join('') || '<p>Nenhum orçamento guardado.</p>'}
+        </ul>
       </div>
     `;
   }
 
   else if (page === 'pedidos') {
+    const defaultCliente = extraData ? extraData.clienteName : '';
+    const defaultDesc = extraData ? extraData.peca : '';
+    const defaultValor = extraData ? extraData.precoFinal : '';
+
     content.innerHTML = `
       <h2>📝 PEDIDOS & VENDAS</h2>
       <div class="card">
         <h3>➕ Registo de Novo Pedido / Venda</h3>
-        <label>Cliente</label>
-        <select id="pedCliente">
-          ${db.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('') || '<option value="">Cadastre um cliente primeiro</option>'}
-        </select>
+        <label>Nome do Cliente</label>
+        <input type="text" id="pedCliente" value="${defaultCliente}" placeholder="Ex: João Silva">
+
         <label>Descrição da Peça / Serviço</label>
-        <input type="text" id="pedDesc" placeholder="Ex: Impressão 3D Peça Personalizada">
+        <input type="text" id="pedDesc" value="${defaultDesc}" placeholder="Ex: Impressão 3D Peça Personalizada">
+        
         <label>Valor Total (€)</label>
-        <input type="number" id="pedValor" placeholder="0.00">
+        <input type="number" id="pedValor" value="${defaultValor}" placeholder="0.00">
+        
         <label>Status</label>
         <select id="pedStatus">
           <option>Pendente</option>
@@ -180,17 +208,7 @@ function renderPage(page) {
   }
 }
 
-// FUNÇÕES AUXILIARES
-function cadastrarCliente() {
-  const db = loadDb();
-  const nome = document.getElementById('cliNome').value.trim();
-  const tel = document.getElementById('cliTel').value.trim();
-  if (!nome) return alert('Preencha o nome do cliente');
-  db.clientes.push({ id: Date.now(), nome, tel });
-  saveDb(db);
-  renderPage('clientes');
-}
-
+// FUNÇÕES DE LÓGICA DE ORÇAMENTO E VENDAS
 function calcularOrcamento() {
   const peso = parseFloat(document.getElementById('orcPeso').value) || 0;
   const precoKg = parseFloat(document.getElementById('orcPrecoKg').value) || 0;
@@ -203,21 +221,82 @@ function calcularOrcamento() {
   const custoTotal = custoMat + custoMaq;
   const precoFinal = custoTotal + (custoTotal * (margem / 100));
 
-  document.getElementById('resCustoMat').innerText = `€ ${custoMat.toFixed(2)}`;
-  document.getElementById('resCustoMaq').innerText = `€ ${custoMaq.toFixed(2)}`;
-  document.getElementById('resPrecoFinal').innerText = `€ ${precoFinal.toFixed(2)}`;
+  const elMat = document.getElementById('resCustoMat');
+  const elMaq = document.getElementById('resCustoMaq');
+  const elFin = document.getElementById('resPrecoFinal');
+
+  if (elMat) elMat.innerText = `€ ${custoMat.toFixed(2)}`;
+  if (elMaq) elMaq.innerText = `€ ${custoMaq.toFixed(2)}`;
+  if (elFin) elFin.innerText = `€ ${precoFinal.toFixed(2)}`;
+
+  return precoFinal.toFixed(2);
+}
+
+function salvarOrcamento() {
+  const db = loadDb();
+  const clienteName = document.getElementById('orcCliente').value.trim();
+  const peca = document.getElementById('orcPeca').value.trim();
+  const precoFinal = calcularOrcamento();
+
+  if (!clienteName || !peca) {
+    return alert('Por favor, preencha o nome da pessoa e o nome da peça!');
+  }
+
+  db.orcamentos.push({
+    id: Date.now(),
+    clienteName,
+    peca,
+    precoFinal,
+    data: today
+  });
+
+  saveDb(db);
+  alert('Orçamento salvo com sucesso!');
+  renderPage('orcamento');
+}
+
+function converterOrcamentoEmVenda(orcamentoId) {
+  const db = loadDb();
+  const orc = db.orcamentos.find(o => o.id === orcamentoId);
+
+  if (!orc) return alert('Orçamento não encontrado');
+
+  // Adiciona o cliente na lista de clientes se ainda não existir
+  const clienteExiste = db.clientes.some(c => c.nome.toLowerCase() === orc.clienteName.toLowerCase());
+  if (!clienteExiste) {
+    db.clientes.push({ id: Date.now(), nome: orc.clienteName, tel: 'Não informado' });
+    saveDb(db);
+  }
+
+  // Ativa a aba Pedidos e preenche os campos automaticamente
+  document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+  const btnPed = document.querySelector('.bottom-nav button[data-page="pedidos"]');
+  if (btnPed) btnPed.classList.add('active');
+
+  renderPage('pedidos', orc);
+}
+
+function cadastrarCliente() {
+  const db = loadDb();
+  const nome = document.getElementById('cliNome').value.trim();
+  const tel = document.getElementById('cliTel').value.trim();
+  if (!nome) return alert('Preencha o nome do cliente');
+  db.clientes.push({ id: Date.now(), nome, tel });
+  saveDb(db);
+  renderPage('clientes');
 }
 
 function cadastrarPedido() {
   const db = loadDb();
-  const cliente = document.getElementById('pedCliente').value;
+  const cliente = document.getElementById('pedCliente').value.trim();
   const desc = document.getElementById('pedDesc').value.trim();
   const valorTotal = document.getElementById('pedValor').value;
   const status = document.getElementById('pedStatus').value;
 
-  if (!desc || !valorTotal) return alert('Preencha os campos obrigatórios');
+  if (!cliente || !desc || !valorTotal) return alert('Preencha todos os campos do pedido');
   db.pedidos.push({ id: Date.now(), cliente, desc, valorTotal, status, data: today });
   saveDb(db);
+  alert('Pedido/Venda registado com sucesso!');
   renderPage('pedidos');
 }
 
