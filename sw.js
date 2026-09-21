@@ -1,10 +1,11 @@
-const CACHE_NAME = 'giacometti-hub-v15';
+const CACHE_NAME = 'rg3d-pwa-v1';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
-  './manifest.json'
+  './manifest.json',
+  './icon.svg'
 ];
 
 self.addEventListener('install', (event) => {

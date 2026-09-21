@@ -1,21 +1,16 @@
 {
-  "short_name": "GiacomettiHub",
-  "name": "Giacometti Hub - Gestão",
+  "name": "RG3D - Gestão",
+  "short_name": "RG3D",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0B0D",
+  "theme_color": "#0B0B0D",
   "icons": [
     {
-      "src": "icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
-  ],
-  "start_url": "./index.html",
-  "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
-  "display": "standalone",
-  "orientation": "portrait"
+  ]
 }
